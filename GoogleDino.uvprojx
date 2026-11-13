@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,PY32F002Bx5</Define>
               <Undefine></Undefine>
-              <IncludePath>.\Application\User\Inc;.\Drivers\PY32F002B_HAL_Driver\Inc</IncludePath>
+              <IncludePath>.\Application\User\Inc;.\Drivers\PY32F002B_HAL_Driver\Inc;.\Libraries\ssd1306</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -425,29 +425,9 @@
               <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal.c</FilePath>
             </File>
             <File>
-              <FileName>py32f002b_hal_adc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_adc.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_comp.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_comp.c</FilePath>
-            </File>
-            <File>
               <FileName>py32f002b_hal_cortex.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_cortex.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_crc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_crc.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_exti.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_exti.c</FilePath>
             </File>
             <File>
               <FileName>py32f002b_hal_flash.c</FileName>
@@ -458,21 +438,6 @@
               <FileName>py32f002b_hal_gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_gpio.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_i2c.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_i2c.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_iwdg.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_iwdg.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_lptim.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_lptim.c</FilePath>
             </File>
             <File>
               <FileName>py32f002b_hal_pwr.c</FileName>
@@ -494,25 +459,20 @@
               <FileType>1</FileType>
               <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_spi.c</FilePath>
             </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Libraries/SSD1306</GroupName>
+          <Files>
             <File>
-              <FileName>py32f002b_hal_tim.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_tim.c</FilePath>
+              <FileName>ssd1306.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Libraries\SSD1306\ssd1306.h</FilePath>
             </File>
             <File>
-              <FileName>py32f002b_hal_tim_ex.c</FileName>
+              <FileName>ssd1306.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_tim_ex.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_uart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_uart.c</FilePath>
-            </File>
-            <File>
-              <FileName>py32f002b_hal_usart.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Drivers\PY32F002B_HAL_Driver\Src\py32f002b_hal_usart.c</FilePath>
+              <FilePath>.\Libraries\SSD1306\ssd1306.c</FilePath>
             </File>
           </Files>
         </Group>

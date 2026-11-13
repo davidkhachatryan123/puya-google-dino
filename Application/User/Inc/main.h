@@ -39,10 +39,13 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "py32f0xx_hal.h"
+#include "py32f002b_hal_spi.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* Private defines -----------------------------------------------------------*/
 /* Exported variables prototypes ---------------------------------------------*/
+extern SPI_HandleTypeDef Spi1Handle;
+
 /* Exported functions prototypes ---------------------------------------------*/
 void APP_ErrorHandler(void);
 
