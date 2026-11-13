@@ -2,8 +2,6 @@ project:
   packs:
     - pack: ARM::CMSIS@^6.4.0
     - pack: Puya::PY32F0xx_DFP@^1.2.8
-    - pack: ARM::CMSIS-NN@^4.0.0
-    - pack: ARM::CMSIS-DSP@^1.10.1
   setups:
     - setup: Options for GoogleDino
       add-path:
