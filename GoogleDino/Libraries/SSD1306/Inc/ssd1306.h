@@ -64,12 +64,17 @@ typedef struct
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *SSD1306_Init);
 HAL_StatusTypeDef SSD1306_Display(void);
 HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast);
+HAL_StatusTypeDef SSD1306_SetInverted(bool inverted);
+HAL_StatusTypeDef SSD1306_SetOnOff(bool on);
 
-// TODO: Print text
+// TODO: Text
+// TODO: Shapes
 
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color);
+
 // void SSD1306_DrawLine();
 // void SSD1306_DrawRectange();
+
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
 
 void SSD1306_Clear(bool color);

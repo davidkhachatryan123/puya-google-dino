@@ -70,6 +70,24 @@ HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast)
 	return status;
 }
 
+HAL_StatusTypeDef SSD1306_SetInverted(bool inverted)
+{
+	display.Inverted = inverted;
+
+	HAL_StatusTypeDef status = SSD1306_WriteCommand(
+		display.Inverted ? SSD1306_INVERTDISPLAY : SSD1306_NORMALDISPLAY);
+
+	return status;
+}
+
+HAL_StatusTypeDef SSD1306_SetOnOff(bool on)
+{
+	HAL_StatusTypeDef status = SSD1306_WriteCommand(
+		on ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF);
+
+	return status;
+}
+
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color)
 {
 	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
