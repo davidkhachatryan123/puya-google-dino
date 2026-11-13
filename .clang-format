@@ -1,0 +1,88 @@
+---
+Language: C
+
+BasedOnStyle: Microsoft
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Always
+ColumnLimit: 0
+
+InsertBraces: false
+InsertNewlineAtEOF: true
+RemoveSemicolon: true
+KeepEmptyLines:
+  AtStartOfFile: false
+MaxEmptyLinesToKeep: 2
+
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterFunction: true
+  AfterEnum: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: false
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeWhile: true
+  SplitEmptyFunction: false
+
+AllowShortBlocksOnASingleLine: Always
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+
+BinPackArguments: true
+BinPackParameters: OnePerLine
+
+BreakBeforeBinaryOperators: NonAssignment
+BreakAfterAttributes: Never
+
+AlignAfterOpenBracket: DontAlign
+AlignOperands: AlignAfterOperator
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+  AlignCompound: true
+  AlignFunctionDeclarations: true
+  AlignFunctionPointers: false
+  PadOperators: false
+AlignConsecutiveMacros: Consecutive
+AlignTrailingComments:
+  Kind: Always
+AlignEscapedNewlines: Left
+
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterRequiresInClause: true
+SpaceAfterCStyleCast: true
+
+PointerAlignment: Right
+DerivePointerAlignment: false
+
+IncludeBlocks: Merge
+SortIncludes:
+  Enabled: false
+
+ReflowComments: IndentOnly
+IndentWrappedFunctionNames: true
+IndentCaseBlocks: true
+
+Cpp11BracedListStyle: false
+
+StatementMacros:
+  - _EXTERN_CXX_WORKAROUND
+  - _END_EXTERN_CXX_WORKAROUND
+  - _STD_BEGIN
+  - _STD_END
+  - _STDEXT_BEGIN
+  - _STDEXT_END
+  - _FMT_P2286_BEGIN
+  - _FMT_P2286_END
+  - _EXTERN_C_UNLESS_PURE
+  - _END_EXTERN_C_UNLESS_PURE
+...

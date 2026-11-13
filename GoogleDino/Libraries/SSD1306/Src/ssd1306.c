@@ -8,10 +8,10 @@ static SSD1306_InitTypeDef display;
 static uint8_t buffer[SSD1306_BUFFER_SIZE];
 
 /* Private macro -------------------------------------------------------------*/
-#define SSD1306_SELECT HAL_GPIO_WritePin(display.CSPort, display.CSPin, GPIO_PIN_RESET);
-#define SSD1306_DESELECT HAL_GPIO_WritePin(display.CSPort, display.CSPin, GPIO_PIN_SET);
+#define SSD1306_SELECT		 HAL_GPIO_WritePin(display.CSPort, display.CSPin, GPIO_PIN_RESET);
+#define SSD1306_DESELECT	 HAL_GPIO_WritePin(display.CSPort, display.CSPin, GPIO_PIN_SET);
 #define SSD1306_MODE_COMMAND HAL_GPIO_WritePin(display.DCPort, display.DCPin, GPIO_PIN_RESET);
-#define SSD1306_MODE_DATA HAL_GPIO_WritePin(display.DCPort, display.DCPin, GPIO_PIN_SET);
+#define SSD1306_MODE_DATA	 HAL_GPIO_WritePin(display.DCPort, display.DCPin, GPIO_PIN_SET);
 
 /* Private function prototypes -----------------------------------------------*/
 static void SSD1306_GPIO_Init(void);
@@ -26,13 +26,8 @@ static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count);
 /* Public functions ----------------------------------------------------------*/
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *init)
 {
-	if (init->SPI == NULL ||
-		init->CSPort == NULL ||
-		init->DCPort == NULL ||
-		init->RSTPort == NULL)
-	{
+	if (init->SPI == NULL || init->CSPort == NULL || init->DCPort == NULL || init->RSTPort == NULL)
 		return HAL_ERROR;
-	}
 
 	display = *init;
 
@@ -42,8 +37,7 @@ HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *init)
 	SSD1306_Reset();
 
 	HAL_StatusTypeDef status = SSD1306_InitSequence();
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	return SSD1306_Display();
 }
@@ -52,11 +46,11 @@ HAL_StatusTypeDef SSD1306_Display(void)
 {
 	static const uint8_t addressWindowCommands[] = {
 		SSD1306_COLUMNADDR, 0, SSD1306_WIDTH - 1,
-		SSD1306_PAGEADDR, 0, 7};
+		SSD1306_PAGEADDR, 0, 7
+	};
 
 	HAL_StatusTypeDef status = SSD1306_WriteCommands(addressWindowCommands, sizeof(addressWindowCommands));
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	return SSD1306_WriteData(buffer, SSD1306_BUFFER_SIZE);
 }
@@ -68,12 +62,10 @@ HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast)
 	HAL_StatusTypeDef status;
 
 	status = SSD1306_WriteCommand(SSD1306_SETCONTRAST);
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	status = SSD1306_WriteCommand(display.Contrast);
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	return status;
 }
@@ -85,25 +77,25 @@ uint8_t *SSD1306_GetBuffer(void) { return buffer; }
 /* Private functions ---------------------------------------------------------*/
 static void SSD1306_GPIO_Init(void)
 {
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 
 	// CS
-	GPIO_InitStruct.Pin = display.CSPin;
+	GPIO_InitStruct.Pin	  = display.CSPin;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
 
 	HAL_GPIO_Init(display.CSPort, &GPIO_InitStruct);
 
 	// DC
-	GPIO_InitStruct.Pin = display.DCPin;
+	GPIO_InitStruct.Pin	  = display.DCPin;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
 
 	HAL_GPIO_Init(display.DCPort, &GPIO_InitStruct);
 
 	// RST
-	GPIO_InitStruct.Pin = display.RSTPin;
+	GPIO_InitStruct.Pin	  = display.RSTPin;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 
 	HAL_GPIO_Init(display.RSTPort, &GPIO_InitStruct);
@@ -140,36 +132,34 @@ static HAL_StatusTypeDef SSD1306_InitSequence(void)
 		SSD1306_SEGREMAP,
 		SSD1306_COMSCAN,
 		SSD1306_SETCOMPINS, 0x12,
-		SSD1306_SETCONTRAST};
+		SSD1306_SETCONTRAST
+	};
 
 	status = SSD1306_WriteCommands(init1Commands, sizeof(init1Commands));
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	status = SSD1306_WriteCommand(display.Contrast);
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	static const uint8_t init2Commands[] = {
 		SSD1306_SETPRECHARGE, 0xF1,
 		SSD1306_SETVCOMDETECT, 0x40,
-		SSD1306_DISPLAYALLON_RESUME};
+		SSD1306_DISPLAYALLON_RESUME
+	};
 
 	status = SSD1306_WriteCommands(init2Commands, sizeof(init2Commands));
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	status = SSD1306_WriteCommand(display.Inverted ? SSD1306_INVERTDISPLAY : SSD1306_NORMALDISPLAY);
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	static const uint8_t init3Commands[] = {
 		SSD1306_DEACTIVATE_SCROLL,
-		SSD1306_DISPLAYON};
+		SSD1306_DISPLAYON
+	};
 
 	status = SSD1306_WriteCommands(init3Commands, sizeof(init3Commands));
-	if (status != HAL_OK)
-		return status;
+	if (status != HAL_OK) return status;
 
 	return HAL_OK;
 }
@@ -194,7 +184,7 @@ static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t 
 	SSD1306_MODE_COMMAND
 	SSD1306_SELECT
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *)commands, count, display.SPITimeoutMs);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *) commands, count, display.SPITimeoutMs);
 
 	SSD1306_DESELECT
 
@@ -209,7 +199,7 @@ static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count)
 	SSD1306_MODE_DATA
 	SSD1306_SELECT
 
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *)data, count, display.SPITimeoutMs);
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *) data, count, display.SPITimeoutMs);
 
 	SSD1306_DESELECT
 

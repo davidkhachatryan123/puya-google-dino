@@ -44,47 +44,43 @@
  */
 void HAL_MspInit(void)
 {
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_RCC_PWR_CLK_ENABLE();
+	__HAL_RCC_SYSCFG_CLK_ENABLE();
+	__HAL_RCC_PWR_CLK_ENABLE();
 }
 
 /**
   * @brief Initialize MSP for SPI.
 
-    PB2   ------> SCK
-    PA1   ------> MISO
-    PA7   ------> MOSI
+	PB2   ------> SCK
+	PA1   ------> MISO
+	PA7   ------> MOSI
 
   */
 void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi)
 {
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
+	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
-  __HAL_RCC_GPIOB_CLK_ENABLE(); /* GPIOB clock enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE(); /* GPIOA clock enable */
-  __HAL_RCC_SPI1_CLK_ENABLE();  /* SPI1 clock enable */
+	__HAL_RCC_GPIOB_CLK_ENABLE(); /* GPIOB clock enable */
+	__HAL_RCC_GPIOA_CLK_ENABLE(); /* GPIOA clock enable */
+	__HAL_RCC_SPI1_CLK_ENABLE();  /* SPI1 clock enable */
 
-  /* SCK */
-  GPIO_InitStruct.Pin = GPIO_PIN_2;
-  if (hspi->Init.CLKPolarity == SPI_POLARITY_LOW)
-  {
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  }
-  else
-  {
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-  }
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	/* SCK */
+	GPIO_InitStruct.Pin = GPIO_PIN_2;
+	if (hspi->Init.CLKPolarity == SPI_POLARITY_LOW)
+		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	else
+		GPIO_InitStruct.Pull = GPIO_PULLUP;
+	GPIO_InitStruct.Mode	  = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Speed	  = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /* MISO/MOSI */
-  GPIO_InitStruct.Pin = GPIO_PIN_1 | GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	/* MISO / MOSI */
+	GPIO_InitStruct.Pin		  = GPIO_PIN_1 | GPIO_PIN_7;
+	GPIO_InitStruct.Mode	  = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Speed	  = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Alternate = GPIO_AF0_SPI1;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 }
 
 /**
@@ -92,14 +88,14 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef *hspi)
  */
 void HAL_SPI_MspDeInit(SPI_HandleTypeDef *hspi)
 {
-  /* Reset SPI peripherals */
-  __HAL_RCC_SPI1_FORCE_RESET();
-  __HAL_RCC_SPI1_RELEASE_RESET();
+	/* Reset SPI peripherals */
+	__HAL_RCC_SPI1_FORCE_RESET();
+	__HAL_RCC_SPI1_RELEASE_RESET();
 
-  /* Turn off peripherals and GPIO clock */
-  /* Unconfigure SPI SCK*/
-  HAL_GPIO_DeInit(GPIOB, GPIO_PIN_2);
-  HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1 | GPIO_PIN_7);
+	/* Turn off peripherals and GPIO clock */
+	/* Unconfigure SPI SCK*/
+	HAL_GPIO_DeInit(GPIOB, GPIO_PIN_2);
+	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1 | GPIO_PIN_7);
 }
 
 /************************ (C) COPYRIGHT Puya *****END OF FILE******************/
