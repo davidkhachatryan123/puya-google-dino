@@ -70,7 +70,41 @@ HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast)
 	return status;
 }
 
-void SSD1306_Clear(bool color) { memset(buffer, color ? 0xFF : 0x00, SSD1306_BUFFER_SIZE); }
+void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color)
+{
+	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+
+	const uint16_t index = (uint16_t) (x + (y / 8) * SSD1306_WIDTH);
+	const uint8_t  mask	 = 1U << (y & 7);
+
+	if (color)
+		buffer[index] |= mask;
+	else
+		buffer[index] &= ~mask;
+}
+
+void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color)
+{
+	if (bitmap == NULL || width == 0 || height == 0) return;
+
+	for (uint8_t sourceY = 0; sourceY < height; ++sourceY)
+	{
+		const uint8_t page = sourceY / 8;
+		const uint8_t bit  = sourceY & 7;
+
+		for (uint8_t sourceX = 0; sourceX < width; ++sourceX)
+		{
+			uint8_t value = bitmap[page * width + sourceX];
+			if (value & (1U << bit))
+				SSD1306_SetPixel(x + sourceX, y + sourceY, color);
+		}
+	}
+}
+
+void SSD1306_Clear(bool color)
+{
+	memset(buffer, color ? 0xFF : 0x00, SSD1306_BUFFER_SIZE);
+}
 
 uint8_t *SSD1306_GetBuffer(void) { return buffer; }
 

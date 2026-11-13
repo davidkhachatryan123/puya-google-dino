@@ -66,8 +66,12 @@ HAL_StatusTypeDef SSD1306_Display(void);
 HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast);
 
 // TODO: Print text
-// TODO: Draw rectange
-// TODO: Draw bitmap
+
+void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color);
+// void SSD1306_DrawLine();
+// void SSD1306_DrawRectange();
+void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
+
 void SSD1306_Clear(bool color);
 
 uint8_t *SSD1306_GetBuffer(void);
