@@ -1,0 +1,137 @@
+project:
+  packs:
+    - pack: ARM::CMSIS@^6.4.0
+    - pack: Puya::PY32F0xx_DFP@^1.2.8
+    - pack: ARM::CMSIS-NN@^4.0.0
+    - pack: ARM::CMSIS-DSP@^1.10.1
+  setups:
+    - setup: Options for GoogleDino
+      add-path:
+        - Application/User/Inc
+        - Drivers/PY32F002B_HAL_Driver/Inc
+        - Libraries/SSD1306/Inc
+      debug: "on"
+      define:
+        - USE_HAL_DRIVER
+        - PY32F002Bx5
+      misc:
+        - C:
+            - -std=c99
+          C-CPP:
+            - -fno-rtti
+            - -funsigned-char
+            - -fshort-enums
+            - -fshort-wchar
+            - -ffunction-sections
+            - -Wall
+            - -Wextra
+            - -Wno-packed
+            - -Wno-reserved-id-macro
+            - -Wno-unused-macros
+            - -Wno-documentation-unknown-command
+            - -Wno-documentation
+            - -Wno-license-management
+            - -Wno-parentheses-equality
+          CPP:
+            - -xc++
+            - -std=c++11
+            - -fno-exceptions
+          ASM:
+            - -masm=auto
+          Link:
+            - --map
+            - --load_addr_map_info
+            - --xref
+            - --callgraph
+            - --symbols
+            - --info sizes
+            - --info totals
+            - --info unused
+            - --info veneers
+            - --strict
+            - --summary_stderr
+            - --info summarysizes
+  linker:
+    - script: GoogleDino_GoogleDino.sct
+  groups:
+    - group: Application
+      groups:
+        - group: User
+          groups:
+            - group: Inc
+              files:
+                - file: Application/User/Inc/main.h
+                - file: Application/User/Inc/py32f002b_hal_conf.h
+                - file: Application/User/Inc/py32f002b_it.h
+            - group: Src
+              files:
+                - file: Application/User/Src/main.c
+                - file: Application/User/Src/py32f002b_hal_msp.c
+                - file: Application/User/Src/py32f002b_it.c
+    - group: Libraries
+      groups:
+        - group: SSD1306
+          groups:
+            - group: Inc
+              files:
+                - file: Libraries/SSD1306/Inc/ssd1306.h
+            - group: Src
+              files:
+                - file: Libraries/SSD1306/Src/ssd1306.c
+    - group: Drivers
+      groups:
+        - group: PY32F002B_HAL_Driver
+          groups:
+            - group: Inc
+              files:
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f0xx_hal.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_adc.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_comp.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_cortex.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_crc.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_def.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_exti.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_flash.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_gpio.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_gpio_ex.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_i2c.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_iwdg.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_lptim.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_pwr.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_rcc.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_rcc_ex.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_spi.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_tim.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_tim_ex.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_uart.h
+                - file: Drivers/PY32F002B_HAL_Driver/Inc/py32f002b_hal_usart.h
+            - group: Src
+              files:
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_adc.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_comp.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_cortex.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_crc.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_exti.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_flash.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_gpio.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_i2c.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_iwdg.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_lptim.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_pwr.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_rcc.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_rcc_ex.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_spi.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_tim.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_tim_ex.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_uart.c
+                - file: Drivers/PY32F002B_HAL_Driver/Src/py32f002b_hal_usart.c
+  components:
+    - component: ARM::CMSIS:CORE
+    - component: Puya::Device:Startup
+
+  output:
+    type:
+      - elf
+      - hex
+      - map

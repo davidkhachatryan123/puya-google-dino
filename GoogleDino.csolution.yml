@@ -1,0 +1,48 @@
+solution:
+  created-for: CMSIS-Toolbox@2.12.0
+  cdefault: # use CMSIS-Toolbox default Compiler options
+
+  compiler: AC6
+
+  # List of miscellaneous tool-specific controls
+  misc:
+    - for-compiler: AC6 # GDB requires DWARF 5, remove when using uVision Debugger
+      C-CPP:
+        - -gdwarf-5
+      ASM:
+        - -gdwarf-5
+
+  # List the packs that define the device and/or board.
+  packs:
+    - pack: Puya::PY32F0xx_DFP@1.2.8
+    - pack: ARM::CMSIS
+
+  target-types:
+    - type: PY32F002Bx5
+      device: PY32F002Bx5
+      target-set:
+        - set:
+          images:
+            - project-context: GoogleDino.Debug
+          debugger:
+            name: ST-Link@pyOCD
+            clock: 4000000
+            protocol: swd
+
+  # List of different build configurations.
+  build-types:
+    - type: Debug
+      debug: on
+      optimize: none
+      misc:
+        - for-compiler: AC6
+          C:
+            - -funwind-tables # ensure reliable stack unwinding with GDB
+
+    - type: Release
+      debug: off
+      optimize: balanced
+
+  # List related projects.
+  projects:
+    - project: GoogleDino/GoogleDino.cproject.yml

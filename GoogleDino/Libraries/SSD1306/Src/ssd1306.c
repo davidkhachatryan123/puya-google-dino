@@ -1,5 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "ssd1306.h"
+#include <string.h>
 
 /* Private variables ---------------------------------------------------------*/
 static SSD1306_InitTypeDef display;

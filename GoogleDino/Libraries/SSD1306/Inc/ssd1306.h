@@ -1,11 +1,10 @@
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __SSD1306_H
-#define __SSD1306_H
+#ifndef SSD1306_H
+#define SSD1306_H
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdbool.h>
-#include <string.h>
-#include "py32f0xx_hal.h"
+#include "py32f0xx_hal.h" // IWYU pragma: keep
 
 /* Private defines -----------------------------------------------------------*/
 #define SSD1306_WIDTH 128U
@@ -73,4 +72,4 @@ void SSD1306_Clear(bool color);
 
 uint8_t *SSD1306_GetBuffer(void);
 
-#endif // __SSD1306_H
+#endif // SSD1306_H
