@@ -4,6 +4,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <stdbool.h>
+#include <stdint.h>
 #include "py32f0xx_hal.h" // IWYU pragma: keep
 
 /* Private defines -----------------------------------------------------------*/
@@ -72,8 +73,8 @@ HAL_StatusTypeDef SSD1306_SetOnOff(bool on);
 
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color);
 
-// void SSD1306_DrawLine();
-// void SSD1306_DrawRectange();
+void SSD1306_DrawFastHLine(uint8_t x, uint8_t y, uint8_t width, bool color);
+void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color);
 
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
 

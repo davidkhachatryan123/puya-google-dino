@@ -1,5 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "ssd1306.h"
+#include <stdint.h>
 #include <string.h>
 
 /* Private variables ---------------------------------------------------------*/
@@ -99,6 +100,98 @@ void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color)
 		buffer[index] |= mask;
 	else
 		buffer[index] &= ~mask;
+}
+
+void SSD1306_DrawFastHLine(uint8_t x, uint8_t y, uint8_t width, bool color)
+{
+	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+	if (width == 0) return;
+
+	// Clip right
+	if (x + width > SSD1306_WIDTH)
+		width = SSD1306_WIDTH - x;
+
+	uint8_t *pBuf = &buffer[(y / 8) * SSD1306_WIDTH + x];
+	uint8_t	 mask = 1U << (y & 7);
+
+	if (color)
+	{
+		while (width--)
+			*pBuf++ |= mask;
+	}
+	else
+	{
+		while (width--)
+			*pBuf++ &= ~mask;
+	}
+}
+
+void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color)
+{
+	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+	if (height == 0) return;
+
+	// Clip bottom
+	if (y + height > SSD1306_HEIGHT)
+		height = SSD1306_HEIGHT - y;
+
+	uint8_t *pBuf = &buffer[(y / 8) * SSD1306_WIDTH + x];
+	uint8_t	 mod  = (y & 7);
+
+	// First partial byte
+	if (mod)
+	{
+		mod = 8 - mod;
+
+		static const uint8_t premask[8] = { 0x00, 0x80, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC, 0xFE };
+
+		uint8_t mask = premask[mod];
+
+		// Adjust mask if we don't reach the end of this byte
+		if (height < mod)
+			mask &= (0XFF >> (mod - height));
+
+		if (color)
+			*pBuf |= mask;
+		else
+			*pBuf &= ~mask;
+
+		// Entire line was drawn in the first byte
+		if (height < mod) return;
+
+		pBuf += SSD1306_WIDTH;
+		height -= mod;
+	}
+
+	// More to go?
+	// Write solid bytes - effectively 8 rows at a time
+	if (height >= 8)
+	{
+		uint8_t val = color ? 0xFF : 0x00;
+
+		do
+		{
+			*pBuf = val;
+			pBuf += SSD1306_WIDTH;
+			height -= 8;
+		}
+		while (height >= 8);
+	}
+
+	// Final partial byte
+	if (height)
+	{
+		mod = height & 7;
+
+		static const uint8_t postmask[8] = { 0x00, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F };
+
+		uint8_t mask = postmask[mod];
+
+		if (color)
+			*pBuf |= mask;
+		else
+			*pBuf &= ~mask;
+	}
 }
 
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color)
