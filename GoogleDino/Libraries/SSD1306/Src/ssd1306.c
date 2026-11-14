@@ -1,7 +1,18 @@
 /* Includes ------------------------------------------------------------------*/
 #include "ssd1306.h"
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
+/* Private defines -----------------------------------------------------------*/
+#ifndef _swap_int8_t
+#define _swap_int8_t(a, b) \
+	{                      \
+		int8_t t = a;      \
+		a		 = b;      \
+		b		 = t;      \
+	}
+#endif
 
 /* Private variables ---------------------------------------------------------*/
 static SSD1306_InitTypeDef display;
@@ -23,6 +34,8 @@ static HAL_StatusTypeDef SSD1306_InitSequence(void);
 static HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command);
 static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t count);
 static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count);
+
+static void SSD1306_DrawLine_Bresenham(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
 
 /* Public functions ----------------------------------------------------------*/
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *init)
@@ -194,6 +207,26 @@ void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color)
 	}
 }
 
+void SSD1306_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color)
+{
+	if (x0 == x1)
+	{
+		if (y0 > y1)
+			_swap_int8_t(y0, y1);
+
+		SSD1306_DrawFastVLine(x0, y0, y1 - y0 + 1, color);
+	}
+	else if (y0 == y1)
+	{
+		if (x0 > x1)
+			_swap_int8_t(x0, x1);
+
+		SSD1306_DrawFastHLine(x0, y0, x1 - x0 + 1, color);
+	}
+	else
+		SSD1306_DrawLine_Bresenham(x0, y0, x1, y1, color);
+}
+
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color)
 {
 	if (bitmap == NULL || width == 0 || height == 0) return;
@@ -349,4 +382,32 @@ static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count)
 	SSD1306_DESELECT
 
 	return status;
+}
+
+static void SSD1306_DrawLine_Bresenham(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color)
+{
+	int16_t dx	  = (x1 >= x0) ? (x1 - x0) : (x0 - x1);
+	int16_t sx	  = (x0 < x1) ? 1 : -1;
+	int16_t dyAbs = (y1 >= y0) ? (y1 - y0) : (y0 - y1);
+	int16_t dy	  = -dyAbs;
+	int16_t sy	  = (y0 < y1) ? 1 : -1;
+	int16_t error = dx + dy;
+
+	for (;;)
+	{
+		SSD1306_SetPixel(x0, y0, color);
+		if (x0 == x1 && y0 == y1) break;
+
+		const int16_t twiceError = 2 * error;
+		if (twiceError >= dy)
+		{
+			error += dy;
+			x0 += sx;
+		}
+		if (twiceError <= dx)
+		{
+			error += dx;
+			y0 += sy;
+		}
+	}
 }
