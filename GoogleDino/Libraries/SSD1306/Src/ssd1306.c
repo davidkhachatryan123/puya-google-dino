@@ -1,6 +1,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "ssd1306.h"
-#include <stdlib.h>
+#include "ssd1306_config.h" // IWYU pragma: keep
 #include <stdint.h>
 #include <string.h>
 
@@ -36,6 +36,11 @@ static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t 
 static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count);
 
 static void SSD1306_DrawLine_Bresenham(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
+#ifdef SSD1306_TRIANGLE_HORIZONTAL_FILL
+static void SSD1306_DrawTriangle_HorizontalFill(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color);
+#else
+static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color);
+#endif
 
 /* Public functions ----------------------------------------------------------*/
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *init)
@@ -251,94 +256,11 @@ void SSD1306_DrawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_
 	}
 	else
 	{
-		uint8_t a, b, y, last;
-
-		// Sort coordinates by Y order (y2 >= y1 >= y0)
-		if (y0 > y1)
-		{
-			_swap_int8_t(y0, y1);
-			_swap_int8_t(x0, x1);
-		}
-		if (y1 > y2)
-		{
-			_swap_int8_t(y2, y1);
-			_swap_int8_t(x2, x1);
-		}
-		if (y0 > y1)
-		{
-			_swap_int8_t(y0, y1);
-			_swap_int8_t(x0, x1);
-		}
-
-		// Handle awkward all-on-same-line case
-		if (y0 == y2)
-		{
-			a = b = x0;
-
-			if (x1 < a)
-				a = x1;
-			else if (x1 > b)
-				b = x1;
-
-			if (x2 < a)
-				a = x2;
-			else if (x2 > b)
-				b = x2;
-
-			SSD1306_DrawFastHLine(a, y0, b - a + 1, color);
-
-			return;
-		}
-
-		uint8_t	 dx01 = x1 - x0, dy01 = y1 - y0,
-				 dx02 = x2 - x0, dy02 = y2 - y0,
-				 dx12 = x2 - x1, dy12 = y2 - y1;
-		uint16_t sa = 0, sb = 0;
-
-		if (y1 == y2)
-			last = y1; // handle flat-bottomed triangle in first loop
-		else
-			last = y1 - 1; // skip it and handle in second loop
-
-		// Render the upper part of the triangle (flat-bottom)
-		for (y = y0; y <= last; y++)
-		{
-			a = x0 + sa / dy01;
-			b = x0 + sb / dy02;
-			sa += dx01;
-			sb += dx02;
-			// longhand (derived from slope-intercept equation):
-			// a = x0 + (x1 - x0) * (y - y0) / (y1 - y0);
-			// b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
-			// And this part (x1 - x0) * (y - y0) we made dx01 * (y - y0)
-			// which simply became addition in each loop cycle
-
-			if (a > b)
-				_swap_int8_t(a, b);
-
-			SSD1306_DrawFastHLine(a, y, b - a + 1, color);
-		}
-
-		// Render the lower part of the triangle (flat-top)
-		sa = (uint16_t) dx12 * (y - y1);
-		sb = (uint16_t) dx02 * (y - y0);
-
-		for (; y <= y2; y++)
-		{
-			a = x1 + sa / dy12;
-			b = x0 + sb / dy02;
-			sa += dx12;
-			sb += dx02;
-			/* longhand:
-			a = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
-			b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
-			*/
-
-			if (a > b)
-				_swap_int8_t(a, b);
-
-			SSD1306_DrawFastHLine(a, y, b - a + 1, color);
-		}
+#ifdef SSD1306_TRIANGLE_HORIZONTAL_FILL
+		SSD1306_DrawTriangle_HorizontalFill(x0, y0, x1, y1, x2, y2, color);
+#else
+		SSD1306_DrawTriangle_VerticalFill(x0, y0, x1, y1, x2, y2, color);
+#endif
 	}
 }
 
@@ -526,3 +448,181 @@ static void SSD1306_DrawLine_Bresenham(uint8_t x0, uint8_t y0, uint8_t x1, uint8
 		}
 	}
 }
+
+#ifdef SSD1306_TRIANGLE_HORIZONTAL_FILL
+static void SSD1306_DrawTriangle_HorizontalFill(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color)
+{
+	int16_t a, b;
+	int16_t y, last;
+
+	// Sort coordinates by Y order (y2 >= y1 >= y0)
+	if (y0 > y1)
+	{
+		_swap_int8_t(y0, y1);
+		_swap_int8_t(x0, x1);
+	}
+	if (y1 > y2)
+	{
+		_swap_int8_t(y2, y1);
+		_swap_int8_t(x2, x1);
+	}
+	if (y0 > y1)
+	{
+		_swap_int8_t(y0, y1);
+		_swap_int8_t(x0, x1);
+	}
+
+	// Handle awkward all-on-same-line case
+	if (y0 == y2)
+	{
+		a = b = x0;
+
+		if (x1 < a) a = x1;
+		else if (x1 > b) b = x1;
+
+		if (x2 < a) a = x2;
+		else if (x2 > b) b = x2;
+
+		SSD1306_DrawFastHLine(a, y0, b - a + 1, color);
+		return;
+	}
+
+	int16_t dx01 = x1 - x0, dy01 = y1 - y0,
+			dx02 = x2 - x0, dy02 = y2 - y0,
+			dx12 = x2 - x1, dy12 = y2 - y1;
+	int32_t sa = 0, sb = 0;
+
+	if (y1 == y2)
+		last = y1; // handle flat-bottomed triangle in first loop
+	else
+		last = y1 - 1; // skip it and handle in second loop
+
+	// Render the upper part of the triangle (flat-bottom)
+	for (y = y0; y <= last; y++)
+	{
+		a = (int16_t) x0 + sa / dy01;
+		b = (int16_t) x0 + sb / dy02;
+		sa += dx01;
+		sb += dx02;
+		// longhand (derived from slope-intercept equation):
+		// a = x0 + (x1 - x0) * (y - y0) / (y1 - y0);
+		// b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
+		// And this part (x1 - x0) * (y - y0) we made dx01 * (y - y0)
+		// which simply became addition in each loop cycle
+
+		if (a > b)
+			_swap_int8_t(a, b);
+
+		SSD1306_DrawFastHLine(a, y, b - a + 1, color);
+	}
+
+	// Render the lower part of the triangle (flat-top)
+	sa = (int32_t) dx12 * (y - y1);
+	sb = (int32_t) dx02 * (y - y0);
+
+	for (; y <= y2; y++)
+	{
+		a = (int16_t) x1 + sa / dy12;
+		b = (int16_t) x0 + sb / dy02;
+		sa += dx12;
+		sb += dx02;
+		/* longhand:
+		a = x1 + (x2 - x1) * (y - y1) / (y2 - y1);
+		b = x0 + (x2 - x0) * (y - y0) / (y2 - y0);
+		*/
+
+		if (a > b)
+			_swap_int8_t(a, b);
+
+		SSD1306_DrawFastHLine(a, y, b - a + 1, color);
+	}
+}
+#else
+static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color)
+{
+	int16_t a, b;
+	int16_t x, last;
+
+	// Sort coordinates by X order (x2 >= x1 >= x0)
+	if (x0 > x1)
+	{
+		_swap_int8_t(x0, x1);
+		_swap_int8_t(y0, y1);
+	}
+	if (x1 > x2)
+	{
+		_swap_int8_t(x2, x1);
+		_swap_int8_t(y2, y1);
+	}
+	if (x0 > x1)
+	{
+		_swap_int8_t(x0, x1);
+		_swap_int8_t(y0, y1);
+	}
+
+	// Handle awkward all-on-same-line case
+	if (x0 == x2)
+	{
+		a = b = y0;
+
+		if (y1 < a) a = y1;
+		else if (y1 > b) b = y1;
+
+		if (y2 < a) a = y2;
+		else if (y2 > b) b = y2;
+
+		SSD1306_DrawFastVLine(x0, a, b - a + 1, color);
+		return;
+	}
+
+	int16_t dx01 = x1 - x0, dy01 = y1 - y0,
+			dx02 = x2 - x0, dy02 = y2 - y0,
+			dx12 = x2 - x1, dy12 = y2 - y1;
+	int32_t sa = 0, sb = 0;
+
+	if (x1 == x2)
+		last = x1; // handle flat-righted triangle in first loop
+	else
+		last = x1 - 1; // skip it and handle in second loop
+
+	// Render the left part of the triangle (flat-right)
+	for (x = x0; x <= last; x++)
+	{
+		a = (int16_t) y0 + sa / dx01;
+		b = (int16_t) y0 + sb / dx02;
+		sa += dy01;
+		sb += dy02;
+		// longhand (derived from slope-intercept equation):
+		// a = y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+		// b = y0 + (y2 - y0) * (x - x0) / (x2 - x0);
+		// And this part (y1 - y0) * (x - x0) we made dy01 * (x - x0)
+		// which simply became addition in each loop cycle
+
+		if (a > b)
+			_swap_int8_t(a, b);
+
+		SSD1306_DrawFastVLine(x, a, b - a + 1, color);
+	}
+
+	// Render the right part of the triangle (flat-left)
+	sa = (int32_t) dy12 * (x - x1);
+	sb = (int32_t) dy02 * (x - x0);
+
+	for (; x <= x2; x++)
+	{
+		a = (int16_t) y1 + sa / dx12;
+		b = (int16_t) y0 + sb / dx02;
+		sa += dy12;
+		sb += dy02;
+		/* longhand:
+		a = y1 + (y2 - y1) * (x - x1) / (x2 - x1);
+		b = y0 + (y2 - y0) * (x - x0) / (x2 - x0);
+		*/
+
+		if (a > b)
+			_swap_int8_t(a, b);
+
+		SSD1306_DrawFastVLine(x, a, b - a + 1, color);
+	}
+}
+#endif

@@ -73,6 +73,7 @@ project:
             - group: Inc
               files:
                 - file: Libraries/SSD1306/Inc/ssd1306.h
+                - file: Libraries/SSD1306/Inc/ssd1306_config.h
             - group: Src
               files:
                 - file: Libraries/SSD1306/Src/ssd1306.c
