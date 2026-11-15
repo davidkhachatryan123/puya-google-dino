@@ -77,6 +77,12 @@ void SSD1306_DrawFastHLine(uint8_t x, uint8_t y, uint8_t width, bool color);
 void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color);
 void SSD1306_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
 
+// TODO: Add rounding and rotation for rectangle
+void SSD1306_DrawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool color, bool filled);
+void SSD1306_DrawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled);
+// void SSD1306_DrawCircle(, bool color, bool filled);
+// void SSD1306_DrawElipse(, bool color, bool filled);
+
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
 
 void SSD1306_Clear(bool color);
