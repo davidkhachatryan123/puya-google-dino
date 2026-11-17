@@ -264,6 +264,63 @@ void SSD1306_DrawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_
 	}
 }
 
+void SSD1306_DrawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled)
+{
+	int16_t x = 0, y = radius;
+	int16_t p = 3 - 2 * radius;
+
+	int16_t cx = x0, cy = y0;
+
+	while (x <= y)
+	{
+		if (!filled)
+		{
+			SSD1306_SetPixel(cx + x, cy + y, color);
+
+			if (x != 0)
+				SSD1306_SetPixel(cx - x, cy + y, color);
+
+			if (x != 0)
+				SSD1306_SetPixel(cx + x, cy - y, color);
+
+			SSD1306_SetPixel(cx - x, cy - y, color);
+
+			if (x != y)
+			{
+				SSD1306_SetPixel(cx + y, cy + x, color);
+				SSD1306_SetPixel(cx - y, cy + x, color);
+				SSD1306_SetPixel(cx + y, cy - x, color);
+				SSD1306_SetPixel(cx - y, cy - x, color);
+			}
+		}
+		else
+		{
+			SSD1306_DrawFastVLine(cx + x, cy - y, 2 * y + 1, color);
+
+			if (x != 0)
+				SSD1306_DrawFastVLine(cx - x, cy - y, 2 * y + 1, color);
+
+			if (x != y)
+			{
+				SSD1306_DrawFastVLine(cx + y, cy - x, 2 * x + 1, color);
+				SSD1306_DrawFastVLine(cx - y, cy - x, 2 * x + 1, color);
+			}
+		}
+
+		if (p < 0)
+		{
+			p += 4 * x + 6;
+		}
+		else
+		{
+			y--;
+			p += 4 * (x - y) + 10;
+		}
+
+		x++;
+	}
+}
+
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color)
 {
 	if (bitmap == NULL || width == 0 || height == 0) return;
