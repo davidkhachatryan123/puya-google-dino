@@ -41,6 +41,8 @@ static void SSD1306_DrawTriangle_HorizontalFill(uint8_t x0, uint8_t y0, uint8_t 
 #else
 static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color);
 #endif
+static void SSD1306_DrawCircleHelper(uint8_t x0, uint8_t y0, uint8_t radius, int8_t cornername, bool color);
+static void SSD1306_DrawFilledCircleHelper(uint8_t x0, uint8_t y0, uint8_t radius, uint8_t delta, uint8_t cornername, bool color);
 
 /* Public functions ----------------------------------------------------------*/
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *init)
@@ -234,15 +236,44 @@ void SSD1306_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color
 
 void SSD1306_DrawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool color, bool filled)
 {
-	SSD1306_DrawFastHLine(x, y, width, color);
-	SSD1306_DrawFastHLine(x, y + height - 1, width, color);
-	SSD1306_DrawFastVLine(x, y, height, color);
-	SSD1306_DrawFastVLine(x + width - 1, y, height, color);
-
-	if (filled)
+	if (!filled)
+	{
+		SSD1306_DrawFastHLine(x, y, width, color);				// Top
+		SSD1306_DrawFastHLine(x, y + height - 1, width, color); // Bottom
+		SSD1306_DrawFastVLine(x, y, height, color);				// Left
+		SSD1306_DrawFastVLine(x + width - 1, y, height, color); // Right
+	}
+	else
 	{
 		for (uint8_t i = x; i < x + width; i++)
 			SSD1306_DrawFastVLine(i, y, height, color);
+	}
+}
+
+void SSD1306_DrawRoundRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t radius, bool color, bool filled)
+{
+	int16_t max_radius = ((width < height) ? width : height) / 2;
+	if (radius > max_radius)
+		radius = max_radius;
+
+	if (!filled)
+	{
+		SSD1306_DrawFastHLine(x + radius, y, width - 2 * radius, color);			  // Top
+		SSD1306_DrawFastHLine(x + radius, y + height - 1, width - 2 * radius, color); // Bottom
+		SSD1306_DrawFastVLine(x, y + radius, height - 2 * radius, color);			  // Left
+		SSD1306_DrawFastVLine(x + width - 1, y + radius, height - 2 * radius, color); // Right
+
+		SSD1306_DrawCircleHelper(x + radius, y + radius, radius, 0x1, color);						   // Top-Left
+		SSD1306_DrawCircleHelper(x + width - radius - 1, y + radius, radius, 0x2, color);			   // Top-Right
+		SSD1306_DrawCircleHelper(x + width - radius - 1, y + height - radius - 1, radius, 0x4, color); // Bottom-Right
+		SSD1306_DrawCircleHelper(x + radius, y + height - radius - 1, radius, 0x8, color);			   // Bottom-Left
+	}
+	else
+	{
+		SSD1306_DrawRectangle(x + radius, y + radius, width - 2 * radius, height, color, filled);
+
+		SSD1306_DrawFilledCircleHelper(x + width - radius - 1, y + radius, radius, height - 2 * radius - 1, 0x1, color);
+		SSD1306_DrawFilledCircleHelper(x + radius, y + radius, radius, height - 2 * radius - 1, 0x2, color);
 	}
 }
 
@@ -266,59 +297,10 @@ void SSD1306_DrawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_
 
 void SSD1306_DrawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled)
 {
-	int16_t x = 0, y = radius;
-	int16_t p = 3 - 2 * radius;
-
-	int16_t cx = x0, cy = y0;
-
-	while (x <= y)
-	{
-		if (!filled)
-		{
-			SSD1306_SetPixel(cx + x, cy + y, color);
-
-			if (x != 0)
-				SSD1306_SetPixel(cx - x, cy + y, color);
-
-			if (x != 0)
-				SSD1306_SetPixel(cx + x, cy - y, color);
-
-			SSD1306_SetPixel(cx - x, cy - y, color);
-
-			if (x != y)
-			{
-				SSD1306_SetPixel(cx + y, cy + x, color);
-				SSD1306_SetPixel(cx - y, cy + x, color);
-				SSD1306_SetPixel(cx + y, cy - x, color);
-				SSD1306_SetPixel(cx - y, cy - x, color);
-			}
-		}
-		else
-		{
-			SSD1306_DrawFastVLine(cx + x, cy - y, 2 * y + 1, color);
-
-			if (x != 0)
-				SSD1306_DrawFastVLine(cx - x, cy - y, 2 * y + 1, color);
-
-			if (x != y)
-			{
-				SSD1306_DrawFastVLine(cx + y, cy - x, 2 * x + 1, color);
-				SSD1306_DrawFastVLine(cx - y, cy - x, 2 * x + 1, color);
-			}
-		}
-
-		if (p < 0)
-		{
-			p += 4 * x + 6;
-		}
-		else
-		{
-			y--;
-			p += 4 * (x - y) + 10;
-		}
-
-		x++;
-	}
+	if (!filled)
+		SSD1306_DrawCircleHelper(x0, y0, radius, 0x1 | 0x2 | 0x4 | 0x8, color);
+	else
+		SSD1306_DrawFilledCircleHelper(x0, y0, radius, 0, 0x1 | 0x2, color);
 }
 
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color)
@@ -683,3 +665,92 @@ static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1
 	}
 }
 #endif
+
+static void SSD1306_DrawCircleHelper(uint8_t x0, uint8_t y0, uint8_t radius, int8_t cornername, bool color)
+{
+	int16_t x = 0, y = radius;
+	int16_t p = 3 - 2 * radius;
+
+	int16_t cx = x0, cy = y0;
+
+	while (x <= y)
+	{
+		if (cornername & 0x4)
+			SSD1306_SetPixel(cx + x, cy + y, color);
+
+		if (cornername & 0x8)
+			if (x != 0)
+				SSD1306_SetPixel(cx - x, cy + y, color);
+
+		if (cornername & 0x2)
+			if (x != 0)
+				SSD1306_SetPixel(cx + x, cy - y, color);
+
+		if (cornername & 0x1)
+			SSD1306_SetPixel(cx - x, cy - y, color);
+
+		if (x != y)
+		{
+			if (cornername & 0x4)
+				SSD1306_SetPixel(cx + y, cy + x, color);
+			if (cornername & 0x8)
+				SSD1306_SetPixel(cx - y, cy + x, color);
+			if (cornername & 0x2)
+				SSD1306_SetPixel(cx + y, cy - x, color);
+			if (cornername & 0x1)
+				SSD1306_SetPixel(cx - y, cy - x, color);
+		}
+
+		if (p < 0)
+		{
+			p += 4 * x + 6;
+		}
+		else
+		{
+			y--;
+			p += 4 * (x - y) + 10;
+		}
+
+		x++;
+	}
+}
+
+static void SSD1306_DrawFilledCircleHelper(uint8_t x0, uint8_t y0, uint8_t radius, uint8_t delta, uint8_t cornername, bool color)
+{
+	int16_t x = 0, y = radius;
+	int16_t p = 3 - 2 * radius;
+
+	int16_t cx = x0, cy = y0;
+
+	delta++; // escaping "+1"s in drawing functions
+
+	while (x <= y)
+	{
+		if (cornername & 0x1)
+			SSD1306_DrawFastVLine(cx + x, cy - y, 2 * y + delta, color);
+
+		if (cornername & 0x2)
+			if (x != 0)
+				SSD1306_DrawFastVLine(cx - x, cy - y, 2 * y + delta, color);
+
+		if (x != y)
+		{
+			if (cornername & 0x1)
+				SSD1306_DrawFastVLine(cx + y, cy - x, 2 * x + delta, color);
+			if (cornername & 0x2)
+				SSD1306_DrawFastVLine(cx - y, cy - x, 2 * x + delta, color);
+		}
+
+		if (p < 0)
+		{
+			p += 4 * x + 6;
+		}
+		else
+		{
+			y--;
+			p += 4 * (x - y) + 10;
+		}
+
+		x++;
+	}
+}

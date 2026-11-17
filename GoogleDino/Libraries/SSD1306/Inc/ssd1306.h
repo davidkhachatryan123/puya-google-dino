@@ -68,19 +68,20 @@ HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast);
 HAL_StatusTypeDef SSD1306_SetInverted(bool inverted);
 HAL_StatusTypeDef SSD1306_SetOnOff(bool on);
 
-// TODO: Text
-
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color);
 
 void SSD1306_DrawFastHLine(uint8_t x, uint8_t y, uint8_t width, bool color);
 void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color);
 void SSD1306_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
 
-void SSD1306_DrawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool color, bool filled); // TODO: Add rounding
+void SSD1306_DrawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool color, bool filled);
+void SSD1306_DrawRoundRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t radius, bool color, bool filled);
 void SSD1306_DrawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled);
 void SSD1306_DrawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled); // TODO: Test with SetInverted()
 
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
+
+// TODO: Text
 
 void SSD1306_Clear(bool color);
 
