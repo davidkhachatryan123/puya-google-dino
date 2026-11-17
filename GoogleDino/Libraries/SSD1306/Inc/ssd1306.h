@@ -8,38 +8,43 @@
 #include "py32f0xx_hal.h" // IWYU pragma: keep
 
 /* Private defines -----------------------------------------------------------*/
+// Display and Buffer
 #define SSD1306_WIDTH		128U
 #define SSD1306_HEIGHT		64U
 #define SSD1306_BUFFER_SIZE (SSD1306_WIDTH * SSD1306_HEIGHT / 8)
 
-#define SSD1306_MEMORYMODE			0x20
-#define SSD1306_COLUMNADDR			0x21
-#define SSD1306_PAGEADDR			0x22
-#define SSD1306_SETCONTRAST			0x81
-#define SSD1306_CHARGEPUMP			0x8D
-#define SSD1306_SEGREMAP			0xA1
-#define SSD1306_DISPLAYALLON_RESUME 0xA4
-#define SSD1306_NORMALDISPLAY		0xA6
-#define SSD1306_INVERTDISPLAY		0xA7
-#define SSD1306_SETMULTIPLEX		0xA8
-#define SSD1306_DISPLAYOFF			0xAE
+// Display control
 #define SSD1306_DISPLAYON			0xAF
-#define SSD1306_COMSCAN				0xC8
-#define SSD1306_SETDISPLAYOFFSET	0xD3
-#define SSD1306_SETDISPLAYCLOCKDIV	0xD5
-#define SSD1306_SETPRECHARGE		0xD9
-#define SSD1306_SETCOMPINS			0xDA
-#define SSD1306_SETVCOMDETECT		0xDB
-#define SSD1306_SETSTARTLINE		0x40
+#define SSD1306_DISPLAYOFF			0xAE
+#define SSD1306_DISPLAYALLON_RESUME 0xA4
 
-// TODO: Will be used in the future (rows with tabs are not used yet)
-#define SSD1306_RIGHT_HORIZONTAL_SCROLL				 0x26
-#define SSD1306_LEFT_HORIZONTAL_SCROLL				 0x27
-#define SSD1306_VERTICAL_AND_RIGHT_HORIZONTAL_SCROLL 0x29
-#define SSD1306_VERTICAL_AND_LEFT_HORIZONTAL_SCROLL	 0x2A
-#define SSD1306_DEACTIVATE_SCROLL					 0x2E
-#define SSD1306_ACTIVATE_SCROLL						 0x2F
-#define SSD1306_SET_VERTICAL_SCROLL_AREA			 0xA3
+// Display direction
+#define SSD1306_NORMAL_V 0xC8
+#define SSD1306_FLIP_V	 0xC0
+#define SSD1306_NORMAL_H 0xA1
+#define SSD1306_FLIP_H	 0xA0
+
+// Display mode
+#define SSD1306_NORMALDISPLAY 0xA6
+#define SSD1306_INVERTDISPLAY 0xA7
+
+// Memory addressing
+#define SSD1306_MEMORYMODE 0x20
+#define SSD1306_COLUMNADDR 0x21
+#define SSD1306_PAGEADDR   0x22
+
+// Display configuration
+#define SSD1306_SETSTARTLINE	   0x40
+#define SSD1306_SETCONTRAST		   0x81
+#define SSD1306_CHARGEPUMP		   0x8D
+#define SSD1306_SETMULTIPLEX	   0xA8
+#define SSD1306_SETDISPLAYOFFSET   0xD3
+#define SSD1306_SETDISPLAYCLOCKDIV 0xD5
+#define SSD1306_SETPRECHARGE	   0xD9
+#define SSD1306_SETCOMPINS		   0xDA
+#define SSD1306_SETVCOMDETECT	   0xDB
+
+#define SSD1306_DEACTIVATE_SCROLL 0x2E
 
 typedef struct
 {
@@ -64,9 +69,14 @@ typedef struct
 /* Exported functions prototypes ---------------------------------------------*/
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *SSD1306_Init);
 HAL_StatusTypeDef SSD1306_Display(void);
+
+HAL_StatusTypeDef SSD1306_SetOnOff(bool on);
 HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast);
 HAL_StatusTypeDef SSD1306_SetInverted(bool inverted);
-HAL_StatusTypeDef SSD1306_SetOnOff(bool on);
+HAL_StatusTypeDef SSD1306_FlipH(bool mode);
+HAL_StatusTypeDef SSD1306_FlipV(bool mode);
+
+void SSD1306_DrawByte(uint8_t data, bool color);
 
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color);
 
@@ -77,7 +87,7 @@ void SSD1306_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color
 void SSD1306_DrawRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, bool color, bool filled);
 void SSD1306_DrawRoundRectangle(uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint8_t radius, bool color, bool filled);
 void SSD1306_DrawTriangle(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, uint8_t x2, uint8_t y2, bool color, bool filled);
-void SSD1306_DrawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled); // TODO: Test with SetInverted()
+void SSD1306_DrawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool filled);
 
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
 

@@ -76,6 +76,14 @@ HAL_StatusTypeDef SSD1306_Display(void)
 	return SSD1306_WriteData(buffer, SSD1306_BUFFER_SIZE);
 }
 
+HAL_StatusTypeDef SSD1306_SetOnOff(bool on)
+{
+	HAL_StatusTypeDef status = SSD1306_WriteCommand(
+		on ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF);
+
+	return status;
+}
+
 HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast)
 {
 	display.Contrast = contrast;
@@ -101,12 +109,25 @@ HAL_StatusTypeDef SSD1306_SetInverted(bool inverted)
 	return status;
 }
 
-HAL_StatusTypeDef SSD1306_SetOnOff(bool on)
+HAL_StatusTypeDef SSD1306_FlipH(bool mode)
 {
 	HAL_StatusTypeDef status = SSD1306_WriteCommand(
-		on ? SSD1306_DISPLAYON : SSD1306_DISPLAYOFF);
+		mode ? SSD1306_FLIP_H : SSD1306_NORMAL_H);
 
 	return status;
+}
+
+HAL_StatusTypeDef SSD1306_FlipV(bool mode)
+{
+	HAL_StatusTypeDef status = SSD1306_WriteCommand(
+		mode ? SSD1306_FLIP_V : SSD1306_NORMAL_V);
+
+	return status;
+}
+
+void SSD1306_DrawByte(uint8_t data, bool color)
+{
+	// TODO: Implement
 }
 
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color)
@@ -383,8 +404,8 @@ static HAL_StatusTypeDef SSD1306_InitSequence(void)
 		SSD1306_SETSTARTLINE | 0x00,	// line #0
 		SSD1306_CHARGEPUMP, 0x14,		// enable
 		SSD1306_MEMORYMODE, 0x00,		// horizontal
-		SSD1306_SEGREMAP,
-		SSD1306_COMSCAN,
+		SSD1306_NORMAL_H,
+		SSD1306_NORMAL_V,
 		SSD1306_SETCOMPINS, 0x12,
 		SSD1306_SETCONTRAST
 	};
