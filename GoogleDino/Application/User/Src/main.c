@@ -152,9 +152,6 @@ static void APP_SSD1306_Init(void)
 
 	SSD1306_InitStruct.SPITimeoutMs = 100;
 
-	SSD1306_InitStruct.Contrast = 127;
-	SSD1306_InitStruct.Inverted = false;
-
 	if (SSD1306_Init(&SSD1306_InitStruct) != HAL_OK)
 	{
 		APP_ErrorHandler();

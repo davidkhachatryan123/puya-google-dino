@@ -8,10 +8,14 @@
 #include "py32f0xx_hal.h" // IWYU pragma: keep
 
 /* Private defines -----------------------------------------------------------*/
-// Display and Buffer
+// Constants
 #define SSD1306_WIDTH		128U
 #define SSD1306_HEIGHT		64U
 #define SSD1306_BUFFER_SIZE (SSD1306_WIDTH * SSD1306_HEIGHT / 8)
+
+#define SSD1306_MAX_X	(SSD1306_WIDTH - 1)
+#define SSD1306_MAX_Y	(SSD1306_HEIGHT - 1)
+#define SSD1306_MAX_ROW (8 - 1)
 
 // Display control
 #define SSD1306_DISPLAYON			0xAF
@@ -61,22 +65,18 @@ typedef struct
 
 	uint32_t SPITimeoutMs;
 
-	uint8_t Contrast;
-	bool	Inverted;
-
 } SSD1306_InitTypeDef;
 
 /* Exported functions prototypes ---------------------------------------------*/
 HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *SSD1306_Init);
 HAL_StatusTypeDef SSD1306_Display(void);
+HAL_StatusTypeDef SSD1306_DisplayPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 
 HAL_StatusTypeDef SSD1306_SetOnOff(bool on);
 HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast);
 HAL_StatusTypeDef SSD1306_SetInverted(bool inverted);
 HAL_StatusTypeDef SSD1306_FlipH(bool mode);
 HAL_StatusTypeDef SSD1306_FlipV(bool mode);
-
-void SSD1306_DrawByte(uint8_t data, bool color);
 
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color);
 
@@ -91,9 +91,12 @@ void SSD1306_DrawCircle(uint8_t x0, uint8_t y0, uint8_t radius, bool color, bool
 
 void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t width, uint8_t height, bool color);
 
-// TODO: Text
+void SSD1306_Home(void);
+void SSD1306_SetCursor(uint8_t x, uint8_t y);
+void SSD1306_DrawByte(uint8_t data, bool color);
 
 void SSD1306_Clear(bool color);
+void SSD1306_ClearPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);
 
 uint8_t *SSD1306_GetBuffer(void);
 
