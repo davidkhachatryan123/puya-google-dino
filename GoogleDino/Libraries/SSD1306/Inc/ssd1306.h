@@ -63,8 +63,6 @@ typedef struct
 	GPIO_TypeDef *RSTPort;
 	uint16_t	  RSTPin;
 
-	uint32_t SPITimeoutMs;
-
 } SSD1306_InitTypeDef;
 
 /* Exported functions prototypes ---------------------------------------------*/
@@ -93,7 +91,12 @@ void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t wid
 
 void SSD1306_Home(void);
 void SSD1306_SetCursor(uint8_t x, uint8_t y);
+void SSD1306_SetScale(uint8_t scale);
+void SSD1306_SetAutoPrintln(bool enabled);
+
 void SSD1306_DrawByte(uint8_t data, bool color);
+void SSD1306_Print(const char *text, bool color);
+void SSD1306_Println(const char *text, bool color);
 
 void SSD1306_Clear(bool color);
 void SSD1306_ClearPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color);

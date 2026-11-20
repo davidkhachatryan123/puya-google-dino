@@ -62,8 +62,10 @@ int main(void)
 	/* System clock configuration */
 	APP_SystemClockConfig();
 
+	/* SPI1 interface initialization */
 	APP_SPI1_Init();
 
+	/* SSD1306 display initialization */
 	APP_SSD1306_Init();
 
 	/* infinite loop */
@@ -149,8 +151,6 @@ static void APP_SSD1306_Init(void)
 
 	SSD1306_InitStruct.RSTPort = OLED_RESET_GPIO_PORT;
 	SSD1306_InitStruct.RSTPin  = OLED_RESET_PIN;
-
-	SSD1306_InitStruct.SPITimeoutMs = 100;
 
 	if (SSD1306_Init(&SSD1306_InitStruct) != HAL_OK)
 	{

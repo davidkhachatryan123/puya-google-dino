@@ -50,7 +50,7 @@ project:
             - --summary_stderr
             - --info summarysizes
   linker:
-    - script: GoogleDino_GoogleDino.sct
+    - script: ./GoogleDino.sct
   groups:
     - group: Application
       groups:
@@ -74,6 +74,7 @@ project:
               files:
                 - file: Libraries/SSD1306/Inc/ssd1306.h
                 - file: Libraries/SSD1306/Inc/ssd1306_config.h
+                - file: Libraries/SSD1306/Inc/ssd1306_char_map.h
             - group: Src
               files:
                 - file: Libraries/SSD1306/Src/ssd1306.c
