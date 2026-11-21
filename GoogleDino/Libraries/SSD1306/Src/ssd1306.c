@@ -565,7 +565,6 @@ static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count)
 
 static inline void SSD1306_SPI_WaitIdle(void)
 {
-	while (display.SPI->State != HAL_SPI_STATE_READY) {}
 	while (__HAL_SPI_GET_FLAG(display.SPI, SPI_FLAG_BSY)) {}
 }
 
