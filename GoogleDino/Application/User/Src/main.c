@@ -41,7 +41,7 @@
 #define OLED_RESET_PIN		 GPIO_PIN_1
 
 /* Private variables ---------------------------------------------------------*/
-SPI_HandleTypeDef Spi1Handle;
+SPI_HandleTypeDef Spi1Handle = { 0 };
 
 /* Private user code ---------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/

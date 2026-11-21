@@ -44,6 +44,7 @@ static HAL_StatusTypeDef SSD1306_SendByteRaw(uint8_t byte);
 static HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command);
 static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t count);
 static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count);
+static inline void		 SSD1306_SPI_WaitIdle(void);
 
 static HAL_StatusTypeDef SSD1306_SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 
@@ -513,6 +514,7 @@ static HAL_StatusTypeDef SSD1306_InitSequence(void)
 static HAL_StatusTypeDef SSD1306_SendByteRaw(uint8_t byte)
 {
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, &byte, 1, SSD1306_SPI_TIMEOUT);
+	SSD1306_SPI_WaitIdle();
 	return status;
 }
 
@@ -537,6 +539,7 @@ static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t 
 	SSD1306_SELECT;
 
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *) commands, count, SSD1306_SPI_TIMEOUT);
+	SSD1306_SPI_WaitIdle();
 
 	SSD1306_DESELECT;
 
@@ -552,10 +555,17 @@ static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count)
 	SSD1306_SELECT;
 
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *) data, count, SSD1306_SPI_TIMEOUT);
+	SSD1306_SPI_WaitIdle();
 
 	SSD1306_DESELECT;
 
 	return status;
+}
+
+static inline void SSD1306_SPI_WaitIdle(void)
+{
+	while (display.SPI->State != HAL_SPI_STATE_READY) {}
+	while (__HAL_SPI_GET_FLAG(display.SPI, SPI_FLAG_BSY)) {}
 }
 
 static HAL_StatusTypeDef SSD1306_SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
