@@ -2,8 +2,6 @@
 #include "ssd1306.h"
 #include "ssd1306_config.h" // IWYU pragma: keep
 #include "ssd1306_char_map.h"
-#include "py32f0xx_hal.h"
-#include "py32f002b_hal_def.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -453,13 +451,13 @@ static void SSD1306_GPIO_Init(void)
 
 	// CS
 	GPIO_InitStruct.Pin	  = display.CSPin;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 
 	HAL_GPIO_Init(display.CSPort, &GPIO_InitStruct);
 
 	// DC
 	GPIO_InitStruct.Pin	  = display.DCPin;
-	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 
 	HAL_GPIO_Init(display.DCPort, &GPIO_InitStruct);
 

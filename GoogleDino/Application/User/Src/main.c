@@ -91,9 +91,7 @@ static void APP_SystemClockConfig(void)
 	RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_24MHz;																		   /* Configure HSI clock 24MHz */
 	RCC_OscInitStruct.HSEState			  = RCC_HSE_BYPASS_DISABLE;																			   /* Close HSE bypass */
 	RCC_OscInitStruct.LSIState			  = RCC_LSI_OFF;																					   /* Close LSI */
-	/*RCC_OscInitStruct.LSICalibrationValue = RCC_LSICALIBRATION_32768Hz;*/
-	RCC_OscInitStruct.LSEState = RCC_LSE_OFF; /* Close LSE */
-	/*RCC_OscInitStruct.LSEDriver = RCC_LSEDRIVE_MEDIUM;*/
+	RCC_OscInitStruct.LSEState			  = RCC_LSE_OFF;																					   /* Close LSE */
 	/* Configure oscillator */
 	if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
 	{

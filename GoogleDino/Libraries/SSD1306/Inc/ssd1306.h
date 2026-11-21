@@ -3,9 +3,9 @@
 #define SSD1306_H
 
 /* Includes ------------------------------------------------------------------*/
+#include "main.h" // IWYU pragma: keep
 #include <stdbool.h>
 #include <stdint.h>
-#include "py32f0xx_hal.h" // IWYU pragma: keep
 
 /* Private defines -----------------------------------------------------------*/
 // Constants

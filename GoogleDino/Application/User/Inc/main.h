@@ -39,6 +39,7 @@ extern "C" {
 
 /* Includes ------------------------------------------------------------------*/
 #include "py32f0xx_hal.h" // IWYU pragma: keep
+#include "py32f002b_hal_def.h" // IWYU pragma: keep
 #include "py32f002b_hal_spi.h"
 
 /* Private includes ----------------------------------------------------------*/

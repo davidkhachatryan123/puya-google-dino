@@ -29,7 +29,7 @@
  */
 
 /* Includes ------------------------------------------------------------------*/
-#include "main.h"
+#include "main.h" // IWYU pragma: keep
 #include "py32f002b_it.h"
 
 /* Private includes ----------------------------------------------------------*/
