@@ -57,8 +57,9 @@ static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1
 static void SSD1306_DrawCircleHelper(uint8_t x0, uint8_t y0, uint8_t radius, int8_t cornername, bool color);
 static void SSD1306_DrawFilledCircleHelper(uint8_t x0, uint8_t y0, uint8_t radius, uint8_t delta, uint8_t cornername, bool color);
 
-static uint8_t SSD1306_GetFontColumn(char character, uint8_t column);
+static uint8_t SSD1306_GetFontCharColumn(char character, uint8_t column);
 static bool	   SSD1306_WriteByte(uint8_t data, bool color);
+static void	   SSD1306_WriteByteOffsetNoShift(uint8_t data, uint8_t verticalOffset, uint8_t horizontalOffset, bool color);
 static void	   SSD1306_WriteChar(char character, bool color);
 
 /* Public functions ----------------------------------------------------------*/
@@ -880,7 +881,7 @@ static void SSD1306_DrawFilledCircleHelper(uint8_t x0, uint8_t y0, uint8_t radiu
 	}
 }
 
-static uint8_t SSD1306_GetFontColumn(char character, uint8_t column)
+static uint8_t SSD1306_GetFontCharColumn(char character, uint8_t column)
 {
 	if (character < SSD1306_FONT_FIRST_CHAR || SSD1306_FONT_LAST_CHAR > 126 || column >= SSD1306_FONT_WIDTH)
 		return 0;
@@ -923,6 +924,16 @@ static bool SSD1306_WriteByte(uint8_t data, bool color)
 	}
 
 	return true;
+}
+
+static void SSD1306_WriteByteOffsetNoShift(uint8_t data, uint8_t verticalOffset, uint8_t horizontalOffset, bool color)
+{
+	const uint16_t index = (_x + horizontalOffset) + ((_y / 8) + verticalOffset) * SSD1306_WIDTH;
+
+	if (color)
+		buffer[index] |= data;
+	else
+		buffer[index] &= ~data;
 }
 
 static void SSD1306_WriteChar(char character, bool color)
@@ -978,14 +989,60 @@ static void SSD1306_WriteChar(char character, bool color)
 	{
 		for (uint8_t col = 0; col <= SSD1306_FONT_WIDTH; col++)
 		{
-			uint8_t bits = SSD1306_GetFontColumn(character, col);
+			uint8_t bits = SSD1306_GetFontCharColumn(character, col);
 			if (!color) bits = ~bits;
 
 			if (_scaleX == 1)
 				SSD1306_WriteByte(bits, color);
 			else // Shrink font for scales: 2, 3 or 4
 			{
-				// TODO: Implement
+				// Scaling bits in direction of Y.
+				uint32_t newData = 0;
+				for (uint8_t sourceBit = 0, targetBit = 0; sourceBit < 8; sourceBit++)
+				{
+					for (uint8_t scaleOffset = 0; scaleOffset < _scaleX; scaleOffset++, targetBit++)
+					{
+						newData |= (uint32_t) ((bits >> sourceBit) & 1U) << targetBit; // Copies the source bit to its corresponding position in the target.
+					}
+				}
+
+				for (uint8_t horizontalScaleOffset = 0; horizontalScaleOffset < _scaleX; horizontalScaleOffset++)
+				{
+					uint8_t previousByte = 0;
+
+					if (_x + horizontalScaleOffset >= 0 && _x + horizontalScaleOffset <= SSD1306_MAX_X)
+					{
+						for (uint8_t verticalScaleOffset = 0; verticalScaleOffset < _scaleX; verticalScaleOffset++)
+						{
+							// Extract the next 8-bit segment from the scaled data.
+							uint8_t currentByte = newData >> (verticalScaleOffset * 8);
+
+							if (_shift == 0)
+							{
+								// Write the bitmap segment directly without vertical shifting.
+								SSD1306_WriteByteOffsetNoShift(currentByte, verticalScaleOffset, horizontalScaleOffset, color);
+							}
+							else
+							{
+								// Merge the previous segment's overflow with the current segment.
+								SSD1306_WriteByteOffsetNoShift(
+									(previousByte >> (8 - _shift)) | (currentByte << _shift),
+									verticalScaleOffset, horizontalScaleOffset, color);
+
+								// Preserve the current segment for the next iteration.
+								previousByte = currentByte;
+							}
+						}
+					}
+
+					// Write the remaining overflow bits into the next vertical segment.
+					if (_shift != 0)
+					{
+						SSD1306_WriteByteOffsetNoShift(
+							previousByte >> (8 - _shift),
+							_scaleX, horizontalScaleOffset, color);
+					}
+				}
 			}
 
 			_x += _scaleX;
