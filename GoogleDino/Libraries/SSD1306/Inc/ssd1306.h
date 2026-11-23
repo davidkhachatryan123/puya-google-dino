@@ -8,15 +8,6 @@
 #include <stdint.h>
 
 /* Private defines -----------------------------------------------------------*/
-// Constants
-#define SSD1306_WIDTH		128U
-#define SSD1306_HEIGHT		64U
-#define SSD1306_BUFFER_SIZE (SSD1306_WIDTH * SSD1306_HEIGHT / 8)
-
-#define SSD1306_MAX_X	(SSD1306_WIDTH - 1)
-#define SSD1306_MAX_Y	(SSD1306_HEIGHT - 1)
-#define SSD1306_MAX_ROW (8 - 1)
-
 // Display control
 #define SSD1306_DISPLAYON			0xAF
 #define SSD1306_DISPLAYOFF			0xAE
@@ -48,11 +39,24 @@
 #define SSD1306_SETCOMPINS		   0xDA
 #define SSD1306_SETVCOMDETECT	   0xDB
 
+// Scroll
 #define SSD1306_DEACTIVATE_SCROLL 0x2E
+
+// I2C
+#define SSD1306_I2C_CONTROL_COMMAND 0x00
+#define SSD1306_I2C_CONTROL_DATA	0x40
+
+typedef enum
+{
+	SSD1306_TYPE_128X64,
+	SSD1306_TYPE_128X32
+} SSD1306_Type;
 
 typedef struct
 {
-	SPI_HandleTypeDef *SPI;
+	SSD1306_Type Type;
+
+	SPI_HandleTypeDef *SPIHandle;
 
 	GPIO_TypeDef *CSPort;
 	uint16_t	  CSPin;
@@ -63,10 +67,22 @@ typedef struct
 	GPIO_TypeDef *RSTPort;
 	uint16_t	  RSTPin;
 
-} SSD1306_InitTypeDef;
+} SSD1306_SPI_InitTypeDef;
+
+typedef struct
+{
+	SSD1306_Type Type;
+
+	I2C_HandleTypeDef *I2CHandle;
+	uint8_t			   I2CAddress;
+
+} SSD1306_I2C_InitTypeDef;
+
 
 /* Exported functions prototypes ---------------------------------------------*/
-HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *SSD1306_Init);
+HAL_StatusTypeDef SSD1306_SPI_Init(SSD1306_SPI_InitTypeDef *SSD1306_Init);
+HAL_StatusTypeDef SSD1306_I2C_Init(SSD1306_I2C_InitTypeDef *SSD1306_Init);
+
 HAL_StatusTypeDef SSD1306_Display(void);
 HAL_StatusTypeDef SSD1306_DisplayPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 

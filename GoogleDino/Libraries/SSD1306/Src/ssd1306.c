@@ -2,13 +2,27 @@
 #include "ssd1306.h"
 #include "ssd1306_config.h" // IWYU pragma: keep
 #include "ssd1306_char_map.h"
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 
 /* Private variables ---------------------------------------------------------*/
-static SSD1306_InitTypeDef display;
+typedef enum
+{
+	SSD1306_TRANSPORT_SPI,
+	SSD1306_TRANSPORT_I2C
+} SSD1306_TransportType;
 
-static uint8_t buffer[SSD1306_BUFFER_SIZE];
+static SSD1306_TransportType transport;
+
+static SSD1306_SPI_InitTypeDef *spiDisplay;
+static SSD1306_I2C_InitTypeDef *i2cDisplay;
+
+static uint8_t displayWidth;
+static uint8_t displayHeight;
+static uint8_t displayPages;
+
+static uint8_t *buffer;
 
 static uint8_t _x = 0, _y = 0;
 static uint8_t _shift = 0;
@@ -19,32 +33,41 @@ static bool _autoPrintln	  = false;
 static bool _skipLeadingSpace = false;
 
 /* Private macro -------------------------------------------------------------*/
-#ifndef _swap_int8_t
-#define _swap_int8_t(a, b) \
-	{                      \
-		int8_t t = a;      \
-		a		 = b;      \
-		b		 = t;      \
+#define SSD1306_MAX_X	(displayWidth - 1U)
+#define SSD1306_MAX_Y	(displayHeight - 1U)
+#define SSD1306_MAX_ROW (displayPages - 1U)
+
+#define SSD1306_ACTIVE_BUFFER_SIZE (displayWidth * displayPages)
+
+#if defined(I2C_BUFFER_LENGTH)
+#define SSD1306_I2C_MAX_DATA_SIZE I2C_BUFFER_LENGTH
+#else
+#define SSD1306_I2C_MAX_DATA_SIZE 32U
+#endif
+
+#ifndef _swap_uint8_t
+#define _swap_uint8_t(a, b) \
+	{                       \
+		uint8_t t = a;      \
+		a		  = b;      \
+		b		  = t;      \
 	}
 #endif
 
-#define SSD1306_SELECT	 HAL_GPIO_WritePin(display.CSPort, display.CSPin, GPIO_PIN_RESET);
-#define SSD1306_DESELECT HAL_GPIO_WritePin(display.CSPort, display.CSPin, GPIO_PIN_SET);
-
-#define SSD1306_MODE_COMMAND HAL_GPIO_WritePin(display.DCPort, display.DCPin, GPIO_PIN_RESET);
-#define SSD1306_MODE_DATA	 HAL_GPIO_WritePin(display.DCPort, display.DCPin, GPIO_PIN_SET);
-
 /* Private function prototypes -----------------------------------------------*/
-static void SSD1306_GPIO_Init(void);
-static void SSD1306_Reset(void);
+static void SSD1306_SetDimensions(SSD1306_Type type);
 
-static HAL_StatusTypeDef SSD1306_InitSequence(void);
+static void SSD1306_SPI_GPIO_Init(void);
+static void SSD1306_SPI_Reset(void);
 
-static HAL_StatusTypeDef SSD1306_SendByteRaw(uint8_t byte);
+static HAL_StatusTypeDef SSD1306_SPI_Transmit(GPIO_PinState dcState, const uint8_t *data, uint16_t count);
+static HAL_StatusTypeDef SSD1306_I2C_Transmit(uint8_t control, const uint8_t *data, uint16_t count);
+
 static HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command);
 static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t count);
 static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count);
-static inline void		 SSD1306_SPI_WaitIdle(void);
+
+static HAL_StatusTypeDef SSD1306_InitSequence(void);
 
 static HAL_StatusTypeDef SSD1306_SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);
 
@@ -63,18 +86,50 @@ static void	   SSD1306_WriteByteOffsetNoShift(uint8_t data, uint8_t verticalOffs
 static void	   SSD1306_WriteChar(char character, bool color);
 
 /* Public functions ----------------------------------------------------------*/
-HAL_StatusTypeDef SSD1306_Init(SSD1306_InitTypeDef *init)
+HAL_StatusTypeDef SSD1306_SPI_Init(SSD1306_SPI_InitTypeDef *init)
 {
-	if (init->SPI == NULL || init->CSPort == NULL || init->DCPort == NULL || init->RSTPort == NULL)
+	if (init == NULL || init->SPIHandle == NULL || init->CSPort == NULL || init->DCPort == NULL || init->RSTPort == NULL)
 		return HAL_ERROR;
 
-	display = *init;
+	spiDisplay = init;
+	transport  = SSD1306_TRANSPORT_SPI;
 
-	SSD1306_GPIO_Init();
-	SSD1306_Reset();
+	SSD1306_SetDimensions(init->Type);
+
+	if ((!buffer) && !(buffer = (uint8_t *) malloc(SSD1306_ACTIVE_BUFFER_SIZE)))
+		return HAL_ERROR;
+
+	SSD1306_SPI_GPIO_Init();
+	SSD1306_SPI_Reset();
 
 	HAL_StatusTypeDef status = SSD1306_InitSequence();
-	if (status != HAL_OK) return status;
+	if (status != HAL_OK)
+		return status;
+
+	SSD1306_Clear(false);
+	SSD1306_Home();
+
+	return SSD1306_Display();
+}
+
+HAL_StatusTypeDef SSD1306_I2C_Init(SSD1306_I2C_InitTypeDef *init)
+{
+	if (init == NULL || init->I2CHandle == NULL)
+		return HAL_ERROR;
+
+	i2cDisplay = init;
+	transport  = SSD1306_TRANSPORT_I2C;
+
+	SSD1306_SetDimensions(init->Type);
+
+	if (init->I2CAddress == NULL)
+	{
+		i2cDisplay->I2CAddress = init->Type == SSD1306_TYPE_128X64 ? 0x3D : 0x3C;
+	}
+
+	HAL_StatusTypeDef status = SSD1306_InitSequence();
+	if (status != HAL_OK)
+		return status;
 
 	SSD1306_Clear(false);
 	SSD1306_Home();
@@ -87,15 +142,15 @@ HAL_StatusTypeDef SSD1306_Display(void)
 	HAL_StatusTypeDef status = SSD1306_SetWindow(0, 0, SSD1306_MAX_X, SSD1306_MAX_ROW);
 	if (status != HAL_OK) return status;
 
-	return SSD1306_WriteData(buffer, SSD1306_BUFFER_SIZE);
+	return SSD1306_WriteData(buffer, SSD1306_ACTIVE_BUFFER_SIZE);
 }
 
 HAL_StatusTypeDef SSD1306_DisplayPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
 {
-	if (x0 > x1 || y0 > y1)
-		return HAL_ERROR;
+	if (x0 > x1) _swap_uint8_t(x0, x1);
+	if (y0 > y1) _swap_uint8_t(y0, y1);
 
-	if (x0 >= SSD1306_WIDTH || x1 >= SSD1306_WIDTH || y0 >= SSD1306_HEIGHT || y1 >= SSD1306_HEIGHT)
+	if (x0 >= displayWidth || x1 >= displayWidth || y0 >= displayHeight || y1 >= displayHeight)
 		return HAL_ERROR;
 
 	y0 >>= 3;
@@ -106,15 +161,14 @@ HAL_StatusTypeDef SSD1306_DisplayPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_
 
 	for (uint8_t y = y0; y <= y1; y++)
 	{
-		for (uint8_t x = x0; x <= x1; x++)
-		{
-			const uint16_t index = x + y * SSD1306_WIDTH;
+		const uint16_t index = x0 + y * displayWidth;
 
-			status = SSD1306_SendByteRaw(buffer[index]);
+		status = SSD1306_WriteData(
+			&buffer[index],
+			x1 - x0 + 1);
 
-			if (status != HAL_OK)
-				return status;
-		}
+		if (status != HAL_OK)
+			return status;
 	}
 
 	return HAL_OK;
@@ -130,19 +184,9 @@ HAL_StatusTypeDef SSD1306_SetOnOff(bool on)
 
 HAL_StatusTypeDef SSD1306_SetContrast(uint8_t contrast)
 {
-	HAL_StatusTypeDef status;
+	const uint8_t commands[] = { SSD1306_SETCONTRAST, contrast };
 
-	SSD1306_MODE_COMMAND;
-	SSD1306_SELECT;
-
-	status = SSD1306_SendByteRaw(SSD1306_SETCONTRAST);
-	if (status != HAL_OK) goto cleanup;
-
-	status = SSD1306_SendByteRaw(contrast);
-
-cleanup:
-	SSD1306_DESELECT;
-	return status;
+	return SSD1306_WriteCommands(commands, sizeof(commands));
 }
 
 HAL_StatusTypeDef SSD1306_SetInverted(bool inverted)
@@ -171,9 +215,9 @@ HAL_StatusTypeDef SSD1306_FlipV(bool mode)
 
 void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color)
 {
-	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+	if (x >= displayWidth || y >= displayHeight) return;
 
-	const uint16_t index = x + (y / 8) * SSD1306_WIDTH;
+	const uint16_t index = x + (y >> 3) * displayWidth;
 	const uint8_t  mask	 = 1U << (y & 0b111);
 
 	if (color)
@@ -184,14 +228,14 @@ void SSD1306_SetPixel(uint8_t x, uint8_t y, bool color)
 
 void SSD1306_DrawFastHLine(uint8_t x, uint8_t y, uint8_t width, bool color)
 {
-	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+	if (x >= displayWidth || y >= displayHeight) return;
 	if (width == 0) return;
 
 	// Clip right
-	if (x + width > SSD1306_WIDTH)
-		width = SSD1306_WIDTH - x;
+	if (x + width > displayWidth)
+		width = displayWidth - x;
 
-	uint8_t *pBuf = &buffer[(y / 8) * SSD1306_WIDTH + x];
+	uint8_t *pBuf = &buffer[(y >> 3) * displayWidth + x];
 	uint8_t	 mask = 1U << (y & 0b111);
 
 	if (color)
@@ -208,14 +252,14 @@ void SSD1306_DrawFastHLine(uint8_t x, uint8_t y, uint8_t width, bool color)
 
 void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color)
 {
-	if (x >= SSD1306_WIDTH || y >= SSD1306_HEIGHT) return;
+	if (x >= displayWidth || y >= displayHeight) return;
 	if (height == 0) return;
 
 	// Clip bottom
-	if (y + height > SSD1306_HEIGHT)
-		height = SSD1306_HEIGHT - y;
+	if (y + height > displayHeight)
+		height = displayHeight - y;
 
-	uint8_t *pBuf = &buffer[(y / 8) * SSD1306_WIDTH + x];
+	uint8_t *pBuf = &buffer[(y >> 3) * displayWidth + x];
 	uint8_t	 mod  = (y & 0b111);
 
 	// First partial byte
@@ -239,7 +283,7 @@ void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color)
 		// Entire line was drawn in the first byte
 		if (height < mod) return;
 
-		pBuf += SSD1306_WIDTH;
+		pBuf += displayWidth;
 		height -= mod;
 	}
 
@@ -252,7 +296,7 @@ void SSD1306_DrawFastVLine(uint8_t x, uint8_t y, uint8_t height, bool color)
 		do
 		{
 			*pBuf = val;
-			pBuf += SSD1306_WIDTH;
+			pBuf += displayWidth;
 			height -= 8;
 		}
 		while (height >= 8);
@@ -279,14 +323,14 @@ void SSD1306_DrawLine(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color
 	if (x0 == x1)
 	{
 		if (y0 > y1)
-			_swap_int8_t(y0, y1);
+			_swap_uint8_t(y0, y1);
 
 		SSD1306_DrawFastVLine(x0, y0, y1 - y0 + 1, color);
 	}
 	else if (y0 == y1)
 	{
 		if (x0 > x1)
-			_swap_int8_t(x0, x1);
+			_swap_uint8_t(x0, x1);
 
 		SSD1306_DrawFastHLine(x0, y0, x1 - x0 + 1, color);
 	}
@@ -369,7 +413,7 @@ void SSD1306_DrawBitmap(uint8_t x, uint8_t y, const uint8_t *bitmap, uint8_t wid
 
 	for (uint8_t sourceY = 0; sourceY < height; ++sourceY)
 	{
-		const uint8_t page = sourceY / 8;
+		const uint8_t page = sourceY >> 3;
 		const uint8_t bit  = sourceY & 0b111;
 
 		for (uint8_t sourceX = 0; sourceX < width; ++sourceX)
@@ -430,13 +474,13 @@ void SSD1306_Println(const char *text, bool color)
 
 void SSD1306_Clear(bool color)
 {
-	memset(buffer, color ? 0xFF : 0x00, SSD1306_BUFFER_SIZE);
+	memset(buffer, color ? 0xFF : 0x00, SSD1306_ACTIVE_BUFFER_SIZE);
 }
 
 void SSD1306_ClearPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool color)
 {
-	if (x0 > x1) _swap_int8_t(x0, x1);
-	if (y0 > y1) _swap_int8_t(y0, y1);
+	if (x0 > x1) _swap_uint8_t(x0, x1);
+	if (y0 > y1) _swap_uint8_t(y0, y1);
 
 	SSD1306_DrawRectangle(x0, y0, x1 - x0 + 1, y1 - y0 + 1, color, true);
 }
@@ -444,64 +488,215 @@ void SSD1306_ClearPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1, bool colo
 uint8_t *SSD1306_GetBuffer(void) { return buffer; }
 
 /* Private functions ---------------------------------------------------------*/
-static void SSD1306_GPIO_Init(void)
+static void SSD1306_SetDimensions(SSD1306_Type type)
 {
+	switch (type)
+	{
+	case SSD1306_TYPE_128X64:
+		displayWidth  = 128U;
+		displayHeight = 64U;
+		break;
+
+	case SSD1306_TYPE_128X32:
+		displayWidth  = 128U;
+		displayHeight = 32U;
+		break;
+
+	default:
+		displayWidth  = 0U;
+		displayHeight = 0U;
+		break;
+	}
+
+	displayPages = displayHeight / 8;
+}
+
+static void SSD1306_SPI_GPIO_Init(void)
+{
+	/* Initial pin states */
+	HAL_GPIO_WritePin(
+		spiDisplay->CSPort,
+		spiDisplay->CSPin,
+		GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(
+		spiDisplay->DCPort,
+		spiDisplay->DCPin,
+		GPIO_PIN_RESET);
+
 	GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 
 	// CS
-	GPIO_InitStruct.Pin	  = display.CSPin;
+	GPIO_InitStruct.Pin	  = spiDisplay->CSPin;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 
-	HAL_GPIO_Init(display.CSPort, &GPIO_InitStruct);
+	HAL_GPIO_Init(spiDisplay->CSPort, &GPIO_InitStruct);
 
 	// DC
-	GPIO_InitStruct.Pin	  = display.DCPin;
+	GPIO_InitStruct.Pin	  = spiDisplay->DCPin;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 
-	HAL_GPIO_Init(display.DCPort, &GPIO_InitStruct);
+	HAL_GPIO_Init(spiDisplay->DCPort, &GPIO_InitStruct);
 
 	// RST
-	GPIO_InitStruct.Pin	  = display.RSTPin;
+	GPIO_InitStruct.Pin	  = spiDisplay->RSTPin;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 
-	HAL_GPIO_Init(display.RSTPort, &GPIO_InitStruct);
-
-	/* Initial pin states */
-	SSD1306_DESELECT;
-	SSD1306_MODE_COMMAND;
+	HAL_GPIO_Init(spiDisplay->RSTPort, &GPIO_InitStruct);
 }
 
-static void SSD1306_Reset(void)
+static void SSD1306_SPI_Reset(void)
 {
-	HAL_GPIO_WritePin(display.RSTPort, display.RSTPin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(spiDisplay->RSTPort, spiDisplay->RSTPin, GPIO_PIN_SET);
 	HAL_Delay(1);
 
-	HAL_GPIO_WritePin(display.RSTPort, display.RSTPin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(spiDisplay->RSTPort, spiDisplay->RSTPin, GPIO_PIN_RESET);
 	HAL_Delay(20);
 
-	HAL_GPIO_WritePin(display.RSTPort, display.RSTPin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(spiDisplay->RSTPort, spiDisplay->RSTPin, GPIO_PIN_SET);
 	HAL_Delay(100);
+}
+
+static HAL_StatusTypeDef SSD1306_SPI_Transmit(GPIO_PinState dcState, const uint8_t *data, uint16_t count)
+{
+	HAL_GPIO_WritePin(
+		spiDisplay->DCPort,
+		spiDisplay->DCPin,
+		dcState);
+
+	HAL_GPIO_WritePin(
+		spiDisplay->CSPort,
+		spiDisplay->CSPin,
+		GPIO_PIN_RESET);
+
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(
+		spiDisplay->SPIHandle,
+		(uint8_t *) data,
+		count,
+		SSD1306_SPI_TIMEOUT);
+
+	while (__HAL_SPI_GET_FLAG(spiDisplay->SPIHandle, SPI_FLAG_BSY)) {}
+
+	HAL_GPIO_WritePin(
+		spiDisplay->CSPort,
+		spiDisplay->CSPin,
+		GPIO_PIN_SET);
+
+	return status;
+}
+
+static HAL_StatusTypeDef SSD1306_I2C_Transmit(uint8_t control, const uint8_t *data, uint16_t count)
+{
+	if (data == NULL || count == 0)
+		return HAL_OK;
+
+	uint8_t packet[SSD1306_I2C_MAX_DATA_SIZE + 1];
+
+	while (count > 0)
+	{
+		uint16_t chunk = count;
+
+		if (chunk > SSD1306_I2C_MAX_DATA_SIZE)
+			chunk = SSD1306_I2C_MAX_DATA_SIZE;
+
+		packet[0] = control;
+
+		memcpy(&packet[1], data, chunk);
+
+		HAL_StatusTypeDef status = HAL_I2C_Master_Transmit(
+			i2cDisplay->I2CHandle,
+			(uint16_t) (i2cDisplay->I2CAddress << 1),
+			packet,
+			chunk + 1,
+			SSD1306_I2C_TIMEOUT);
+
+		while (HAL_I2C_GetState(&I2cHandle) != HAL_I2C_STATE_READY) {}
+
+		if (status != HAL_OK)
+			return status;
+
+		data += chunk;
+		count -= chunk;
+	}
+
+	return HAL_OK;
+}
+
+static inline HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command)
+{
+	return SSD1306_WriteCommands(&command, 1);
+}
+
+static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t count)
+{
+	if (commands == NULL || count == 0)
+		return HAL_OK;
+
+	if (transport == SSD1306_TRANSPORT_SPI)
+	{
+		return SSD1306_SPI_Transmit(
+			GPIO_PIN_RESET,
+			commands,
+			count);
+	}
+
+	return SSD1306_I2C_Transmit(
+		SSD1306_I2C_CONTROL_COMMAND,
+		commands,
+		count);
+}
+
+static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count)
+{
+	if (data == NULL || count == 0)
+		return HAL_OK;
+
+	if (transport == SSD1306_TRANSPORT_SPI)
+	{
+		return SSD1306_SPI_Transmit(
+			GPIO_PIN_SET,
+			data,
+			count);
+	}
+
+	return SSD1306_I2C_Transmit(
+		SSD1306_I2C_CONTROL_DATA,
+		data,
+		count);
 }
 
 static HAL_StatusTypeDef SSD1306_InitSequence(void)
 {
-	static const uint8_t initCommands[] = {
+	uint8_t compins	 = (displayHeight == 64) ? 0x12 : 0x02;
+	uint8_t contrast = (displayHeight == 64) ? 0x9F : 0x8F;
+
+	const uint8_t initCommands[] = {
 		SSD1306_DISPLAYOFF,
+
 		SSD1306_SETDISPLAYCLOCKDIV, 0x80, // the suggested ratio 0x80
+
 		SSD1306_SETMULTIPLEX, SSD1306_MAX_Y,
+
 		SSD1306_SETDISPLAYOFFSET, 0x00, // no offset
 		SSD1306_SETSTARTLINE | 0x00,	// line #0
-		SSD1306_CHARGEPUMP, 0x14,		// enable
-		SSD1306_MEMORYMODE, 0x00,		// horizontal
+
+		SSD1306_CHARGEPUMP, 0x14, // enable
+
+		SSD1306_MEMORYMODE, 0x00, // horizontal
+
 		SSD1306_NORMAL_H,
 		SSD1306_NORMAL_V,
-		SSD1306_SETCOMPINS, 0x12,
-		SSD1306_SETCONTRAST, 0x7F,
+
+		SSD1306_SETCOMPINS, compins,
+
+		SSD1306_SETCONTRAST, contrast,
+
 		SSD1306_SETPRECHARGE, 0xF1,
 		SSD1306_SETVCOMDETECT, 0x40,
+
 		SSD1306_DISPLAYALLON_RESUME,
 		SSD1306_NORMALDISPLAY,
 		SSD1306_DEACTIVATE_SCROLL,
@@ -510,62 +705,6 @@ static HAL_StatusTypeDef SSD1306_InitSequence(void)
 
 	HAL_StatusTypeDef status = SSD1306_WriteCommands(initCommands, sizeof(initCommands));
 	return status;
-}
-
-static HAL_StatusTypeDef SSD1306_SendByteRaw(uint8_t byte)
-{
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, &byte, 1, SSD1306_SPI_TIMEOUT);
-	SSD1306_SPI_WaitIdle();
-	return status;
-}
-
-static HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command)
-{
-	SSD1306_MODE_COMMAND;
-	SSD1306_SELECT;
-
-	HAL_StatusTypeDef status = SSD1306_SendByteRaw(command);
-
-	SSD1306_DESELECT;
-
-	return status;
-}
-
-static HAL_StatusTypeDef SSD1306_WriteCommands(const uint8_t *commands, uint8_t count)
-{
-	if (commands == NULL || count == 0)
-		return HAL_OK;
-
-	SSD1306_MODE_COMMAND;
-	SSD1306_SELECT;
-
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *) commands, count, SSD1306_SPI_TIMEOUT);
-	SSD1306_SPI_WaitIdle();
-
-	SSD1306_DESELECT;
-
-	return status;
-}
-
-static HAL_StatusTypeDef SSD1306_WriteData(const uint8_t *data, uint16_t count)
-{
-	if (data == NULL || count == 0)
-		return HAL_OK;
-
-	SSD1306_MODE_DATA;
-	SSD1306_SELECT;
-
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(display.SPI, (uint8_t *) data, count, SSD1306_SPI_TIMEOUT);
-	SSD1306_SPI_WaitIdle();
-
-	SSD1306_DESELECT;
-
-	return status;
-}
-
-static inline void SSD1306_SPI_WaitIdle(void)
-{
-	while (__HAL_SPI_GET_FLAG(display.SPI, SPI_FLAG_BSY)) {}
 }
 
 static HAL_StatusTypeDef SSD1306_SetWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1)
@@ -622,18 +761,18 @@ static void SSD1306_DrawTriangle_HorizontalFill(uint8_t x0, uint8_t y0, uint8_t 
 	// Sort coordinates by Y order (y2 >= y1 >= y0)
 	if (y0 > y1)
 	{
-		_swap_int8_t(y0, y1);
-		_swap_int8_t(x0, x1);
+		_swap_uint8_t(y0, y1);
+		_swap_uint8_t(x0, x1);
 	}
 	if (y1 > y2)
 	{
-		_swap_int8_t(y2, y1);
-		_swap_int8_t(x2, x1);
+		_swap_uint8_t(y2, y1);
+		_swap_uint8_t(x2, x1);
 	}
 	if (y0 > y1)
 	{
-		_swap_int8_t(y0, y1);
-		_swap_int8_t(x0, x1);
+		_swap_uint8_t(y0, y1);
+		_swap_uint8_t(x0, x1);
 	}
 
 	// Handle awkward all-on-same-line case
@@ -675,7 +814,7 @@ static void SSD1306_DrawTriangle_HorizontalFill(uint8_t x0, uint8_t y0, uint8_t 
 		// which simply became addition in each loop cycle
 
 		if (a > b)
-			_swap_int8_t(a, b);
+			_swap_uint8_t(a, b);
 
 		SSD1306_DrawFastHLine(a, y, b - a + 1, color);
 	}
@@ -696,7 +835,7 @@ static void SSD1306_DrawTriangle_HorizontalFill(uint8_t x0, uint8_t y0, uint8_t 
 		*/
 
 		if (a > b)
-			_swap_int8_t(a, b);
+			_swap_uint8_t(a, b);
 
 		SSD1306_DrawFastHLine(a, y, b - a + 1, color);
 	}
@@ -710,18 +849,18 @@ static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1
 	// Sort coordinates by X order (x2 >= x1 >= x0)
 	if (x0 > x1)
 	{
-		_swap_int8_t(x0, x1);
-		_swap_int8_t(y0, y1);
+		_swap_uint8_t(x0, x1);
+		_swap_uint8_t(y0, y1);
 	}
 	if (x1 > x2)
 	{
-		_swap_int8_t(x2, x1);
-		_swap_int8_t(y2, y1);
+		_swap_uint8_t(x2, x1);
+		_swap_uint8_t(y2, y1);
 	}
 	if (x0 > x1)
 	{
-		_swap_int8_t(x0, x1);
-		_swap_int8_t(y0, y1);
+		_swap_uint8_t(x0, x1);
+		_swap_uint8_t(y0, y1);
 	}
 
 	// Handle awkward all-on-same-line case
@@ -763,7 +902,7 @@ static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1
 		// which simply became addition in each loop cycle
 
 		if (a > b)
-			_swap_int8_t(a, b);
+			_swap_uint8_t(a, b);
 
 		SSD1306_DrawFastVLine(x, a, b - a + 1, color);
 	}
@@ -784,7 +923,7 @@ static void SSD1306_DrawTriangle_VerticalFill(uint8_t x0, uint8_t y0, uint8_t x1
 		*/
 
 		if (a > b)
-			_swap_int8_t(a, b);
+			_swap_uint8_t(a, b);
 
 		SSD1306_DrawFastVLine(x, a, b - a + 1, color);
 	}
@@ -887,14 +1026,14 @@ static uint8_t SSD1306_GetFontCharColumn(char character, uint8_t column)
 
 	const uint8_t index = (uint8_t) character - 32;
 
-	return _charMap[index][column];
+	return SSD1306_CHAR_MAP[index][column];
 }
 
 static bool SSD1306_WriteByte(uint8_t data, bool color)
 {
 	if (_x > SSD1306_MAX_X) return false;
 
-	const uint16_t index = _x + (_y / 8) * SSD1306_WIDTH;
+	const uint16_t index = _x + (_y >> 3) * displayWidth;
 
 	if (_shift == 0)
 	{
@@ -911,14 +1050,14 @@ static bool SSD1306_WriteByte(uint8_t data, bool color)
 		if (color)
 		{
 			buffer[index] |= lower;
-			if (_y / 8 < SSD1306_MAX_ROW)
-				buffer[index + SSD1306_WIDTH] |= upper;
+			if (_y >> 3 < SSD1306_MAX_ROW)
+				buffer[index + displayWidth] |= upper;
 		}
 		else
 		{
 			buffer[index] &= ~lower;
-			if (_y / 8 < SSD1306_MAX_ROW)
-				buffer[index + SSD1306_WIDTH] &= ~upper;
+			if (_y >> 3 < SSD1306_MAX_ROW)
+				buffer[index + displayWidth] &= ~upper;
 		}
 	}
 
@@ -927,7 +1066,7 @@ static bool SSD1306_WriteByte(uint8_t data, bool color)
 
 static void SSD1306_WriteByteOffsetNoShift(uint8_t data, uint8_t verticalOffset, uint8_t horizontalOffset, bool color)
 {
-	const uint16_t index = (_x + horizontalOffset) + ((_y / 8) + verticalOffset) * SSD1306_WIDTH;
+	const uint16_t index = (_x + horizontalOffset) + ((_y >> 3) + verticalOffset) * displayWidth;
 
 	if (color)
 		buffer[index] |= data;
