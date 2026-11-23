@@ -613,7 +613,7 @@ static HAL_StatusTypeDef SSD1306_I2C_Transmit(uint8_t control, const uint8_t *da
 			chunk + 1,
 			SSD1306_I2C_TIMEOUT);
 
-		while (HAL_I2C_GetState(&I2cHandle) != HAL_I2C_STATE_READY) {}
+		while (HAL_I2C_GetState(i2cDisplay->I2CHandle) != HAL_I2C_STATE_READY) {}
 
 		if (status != HAL_OK)
 			return status;
