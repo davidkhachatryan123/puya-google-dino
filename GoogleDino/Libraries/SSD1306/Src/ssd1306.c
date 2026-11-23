@@ -61,8 +61,10 @@ static bool _skipLeadingSpace = false;
 /* Private function prototypes -----------------------------------------------*/
 static void SSD1306_SetDimensions(SSD1306_Type type);
 
+#if defined(HAL_SPI_MODULE_ENABLED)
 static void SSD1306_SPI_GPIO_Init(void);
 static void SSD1306_SPI_Reset(void);
+#endif
 
 static HAL_StatusTypeDef SSD1306_SPI_Transmit(GPIO_PinState dcState, const uint8_t *data, uint16_t count);
 static HAL_StatusTypeDef SSD1306_I2C_Transmit(uint8_t control, const uint8_t *data, uint16_t count);
@@ -519,6 +521,7 @@ static void SSD1306_SetDimensions(SSD1306_Type type)
 	displayPages = displayHeight / 8;
 }
 
+#if defined(HAL_SPI_MODULE_ENABLED)
 static void SSD1306_SPI_GPIO_Init(void)
 {
 	/* Initial pin states */
@@ -567,6 +570,7 @@ static void SSD1306_SPI_Reset(void)
 	HAL_GPIO_WritePin(spiDisplay->RSTPort, spiDisplay->RSTPin, GPIO_PIN_SET);
 	HAL_Delay(100);
 }
+#endif
 
 static HAL_StatusTypeDef SSD1306_SPI_Transmit(GPIO_PinState dcState, const uint8_t *data, uint16_t count)
 {

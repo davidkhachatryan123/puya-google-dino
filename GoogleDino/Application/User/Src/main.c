@@ -68,6 +68,31 @@ int main(void)
 	/* SSD1306 display initialization */
 	APP_SSD1306_Init();
 
+	// Draw the screen border.
+	// SSD1306_DrawFastHLine(0, 0, 128, true);
+	// SSD1306_DrawFastHLine(0, 63, 128, true);
+	// SSD1306_DrawFastVLine(0, 0, 64, true);
+	// SSD1306_DrawFastVLine(127, 0, 64, true);
+
+	// // Vertical lines.
+	// SSD1306_DrawFastVLine(16, 0, 64, true);
+	// SSD1306_DrawFastVLine(32, 0, 64, true);
+	// SSD1306_DrawFastVLine(64, 0, 64, true);
+	// SSD1306_DrawFastVLine(96, 0, 64, true);
+
+	// // Horizontal lines.
+	// SSD1306_DrawFastHLine(0, 16, 128, true);
+	// SSD1306_DrawFastHLine(0, 32, 128, true);
+	// SSD1306_DrawFastHLine(0, 48, 128, true);
+
+	SSD1306_DrawFastHLine(0, 32, 128, true);
+	SSD1306_DrawFastVLine(64, 0, 64, true);
+
+	HAL_StatusTypeDef status = SSD1306_Display();
+
+	if (status != HAL_OK)
+		APP_ErrorHandler();
+
 	/* infinite loop */
 	while (1)
 	{

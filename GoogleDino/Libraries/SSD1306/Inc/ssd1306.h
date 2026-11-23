@@ -11,7 +11,7 @@
 #endif
 #include "py32f002b_hal_spi.h"
 #if defined(HAL_I2C_MODULE_ENABLED)
-#include "stm32f1xx_hal_i2c.h"
+#include "py32f002b_hal_i2c.h"
 #endif
 #include <stdbool.h>
 #include <stdint.h>
