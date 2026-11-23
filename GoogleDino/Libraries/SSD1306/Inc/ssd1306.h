@@ -4,9 +4,15 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "py32f0xx_hal.h" // IWYU pragma: keep
+#include "py32f002b_hal_conf.h"
 #include "py32f002b_hal_def.h"
+#if defined(HAL_SPI_MODULE_ENABLED)
 #include "py32f002b_hal_spi.h"
-#include "py32f002b_hal_i2c.h"
+#endif
+#include "py32f002b_hal_spi.h"
+#if defined(HAL_I2C_MODULE_ENABLED)
+#include "stm32f1xx_hal_i2c.h"
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -55,6 +61,7 @@ typedef enum
 	SSD1306_TYPE_128X32
 } SSD1306_Type;
 
+#if defined(HAL_SPI_MODULE_ENABLED)
 typedef struct
 {
 	SSD1306_Type Type;
@@ -71,7 +78,9 @@ typedef struct
 	uint16_t	  RSTPin;
 
 } SSD1306_SPI_InitTypeDef;
+#endif
 
+#if defined(HAL_I2C_MODULE_ENABLED)
 typedef struct
 {
 	SSD1306_Type Type;
@@ -80,11 +89,15 @@ typedef struct
 	uint8_t			   I2CAddress;
 
 } SSD1306_I2C_InitTypeDef;
-
+#endif
 
 /* Exported functions prototypes ---------------------------------------------*/
+#if defined(HAL_SPI_MODULE_ENABLED)
 HAL_StatusTypeDef SSD1306_SPI_Init(SSD1306_SPI_InitTypeDef *SSD1306_Init);
+#endif
+#if defined(HAL_I2C_MODULE_ENABLED)
 HAL_StatusTypeDef SSD1306_I2C_Init(SSD1306_I2C_InitTypeDef *SSD1306_Init);
+#endif
 
 HAL_StatusTypeDef SSD1306_Display(void);
 HAL_StatusTypeDef SSD1306_DisplayPart(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1);

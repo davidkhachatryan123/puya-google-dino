@@ -32,7 +32,7 @@
 #include "main.h"
 #include "ssd1306.h"
 
-/* Private define ------------------------------------------------------------*/
+/* Private defines -----------------------------------------------------------*/
 #define OLED_CS_GPIO_PORT	 GPIOA
 #define OLED_CS_PIN			 GPIO_PIN_6
 #define OLED_DC_GPIO_PORT	 GPIOA
@@ -137,9 +137,11 @@ static void APP_SPI1_Init(void)
 
 static void APP_SSD1306_Init(void)
 {
-	SSD1306_InitTypeDef SSD1306_InitStruct = {};
+	SSD1306_SPI_InitTypeDef SSD1306_InitStruct = {};
 
-	SSD1306_InitStruct.SPI = &Spi1Handle;
+	SSD1306_InitStruct.Type = SSD1306_TYPE_128X64;
+
+	SSD1306_InitStruct.SPIHandle = &Spi1Handle;
 
 	SSD1306_InitStruct.CSPort = OLED_CS_GPIO_PORT;
 	SSD1306_InitStruct.CSPin  = OLED_CS_PIN;
@@ -150,7 +152,7 @@ static void APP_SSD1306_Init(void)
 	SSD1306_InitStruct.RSTPort = OLED_RESET_GPIO_PORT;
 	SSD1306_InitStruct.RSTPin  = OLED_RESET_PIN;
 
-	if (SSD1306_Init(&SSD1306_InitStruct) != HAL_OK)
+	if (SSD1306_SPI_Init(&SSD1306_InitStruct) != HAL_OK)
 	{
 		APP_ErrorHandler();
 	}

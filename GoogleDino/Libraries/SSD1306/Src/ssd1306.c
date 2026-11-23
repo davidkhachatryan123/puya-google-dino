@@ -15,8 +15,12 @@ typedef enum
 
 static SSD1306_TransportType transport;
 
+#if defined(HAL_SPI_MODULE_ENABLED)
 static SSD1306_SPI_InitTypeDef *spiDisplay;
+#endif
+#if defined(HAL_I2C_MODULE_ENABLED)
 static SSD1306_I2C_InitTypeDef *i2cDisplay;
+#endif
 
 static uint8_t displayWidth;
 static uint8_t displayHeight;
@@ -86,6 +90,7 @@ static void	   SSD1306_WriteByteOffsetNoShift(uint8_t data, uint8_t verticalOffs
 static void	   SSD1306_WriteChar(char character, bool color);
 
 /* Public functions ----------------------------------------------------------*/
+#if defined(HAL_SPI_MODULE_ENABLED)
 HAL_StatusTypeDef SSD1306_SPI_Init(SSD1306_SPI_InitTypeDef *init)
 {
 	if (init == NULL || init->SPIHandle == NULL || init->CSPort == NULL || init->DCPort == NULL || init->RSTPort == NULL)
@@ -111,7 +116,9 @@ HAL_StatusTypeDef SSD1306_SPI_Init(SSD1306_SPI_InitTypeDef *init)
 
 	return SSD1306_Display();
 }
+#endif
 
+#if defined(HAL_I2C_MODULE_ENABLED)
 HAL_StatusTypeDef SSD1306_I2C_Init(SSD1306_I2C_InitTypeDef *init)
 {
 	if (init == NULL || init->I2CHandle == NULL)
@@ -136,6 +143,7 @@ HAL_StatusTypeDef SSD1306_I2C_Init(SSD1306_I2C_InitTypeDef *init)
 
 	return SSD1306_Display();
 }
+#endif
 
 HAL_StatusTypeDef SSD1306_Display(void)
 {
@@ -562,6 +570,7 @@ static void SSD1306_SPI_Reset(void)
 
 static HAL_StatusTypeDef SSD1306_SPI_Transmit(GPIO_PinState dcState, const uint8_t *data, uint16_t count)
 {
+#if defined(HAL_SPI_MODULE_ENABLED)
 	HAL_GPIO_WritePin(
 		spiDisplay->DCPort,
 		spiDisplay->DCPin,
@@ -586,10 +595,14 @@ static HAL_StatusTypeDef SSD1306_SPI_Transmit(GPIO_PinState dcState, const uint8
 		GPIO_PIN_SET);
 
 	return status;
+#else
+	return HAL_ERROR;
+#endif
 }
 
 static HAL_StatusTypeDef SSD1306_I2C_Transmit(uint8_t control, const uint8_t *data, uint16_t count)
 {
+#if defined(HAL_I2C_MODULE_ENABLED)
 	if (data == NULL || count == 0)
 		return HAL_OK;
 
@@ -623,6 +636,9 @@ static HAL_StatusTypeDef SSD1306_I2C_Transmit(uint8_t control, const uint8_t *da
 	}
 
 	return HAL_OK;
+#else
+	return HAL_ERROR;
+#endif
 }
 
 static inline HAL_StatusTypeDef SSD1306_WriteCommand(uint8_t command)
